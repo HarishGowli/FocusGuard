@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <title>FocusGuard</title>
+
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+
+  <body>
+    <div class="container">
+      <header>
+        <h1>FocusGuard</h1>
+
+        <p class="subtitle">Protect your focus.</p>
+      </header>
+
+      <!--
+            Add website section
+        -->
+
+      <section class="add-section">
+        <input
+          type="text"
+          id="websiteInput"
+          placeholder="youtube.com"
+          autocomplete="off"
+        />
+
+        <input type="number" id="durationInput" placeholder="Minutes" min="1" />
+
+        <button id="saveButton">Block Website</button>
+
+        <p id="message" class="message"></p>
+      </section>
+
+      <!--
+            Active blocked websites
+        -->
+
+      <section class="blocked-section">
+        <div class="section-header">
+          <h2>Active Blocks</h2>
+
+          <span id="siteCount"> 0 </span>
+        </div>
+
+        <div id="blockedSites" class="blocked-sites">
+          <!--
+                    Sites will be inserted
+                    dynamically using JavaScript.
+                -->
+        </div>
+      </section>
+    </div>
+
+    <script src="utils/domain.js"></script>
+    <script src="popup.js"></script>
+  </body>
+</html>

@@ -308,3 +308,75 @@ button:hover {
 
     opacity: 1;
 }
+
+select {
+    width: 100%;
+
+    padding: 9px;
+
+    margin-bottom: 8px;
+
+    border:
+        1px solid #ccc;
+
+    border-radius: 6px;
+
+    font-size: 13px;
+
+    background: white;
+}
+
+
+.hidden {
+    display: none;
+}
+
+
+.field-label {
+    display: block;
+
+    margin: 8px 0 5px;
+
+    font-size: 12px;
+
+    font-weight: 600;
+
+    color: #555;
+}
+
+
+.days {
+    display: flex;
+
+    flex-wrap: wrap;
+
+    gap: 6px;
+
+    margin-bottom: 10px;
+}
+
+
+.days label {
+    display: flex;
+
+    align-items: center;
+
+    gap: 3px;
+
+    padding: 5px 7px;
+
+    background: #f1f1f1;
+
+    border-radius: 5px;
+
+    font-size: 11px;
+
+    cursor: pointer;
+}
+
+
+.days input {
+    width: auto;
+
+    margin: 0;
+}

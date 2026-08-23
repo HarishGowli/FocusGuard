@@ -18,17 +18,13 @@
  * ==================================================
  */
 
-
 /*
  * --------------------------------------------------
  * Load domain normalization utility
  * --------------------------------------------------
  */
 
-importScripts(
-    "../utils/domain.js"
-);
-
+importScripts("../utils/domain.js", "../utils/schedule.js");
 
 /*
  * --------------------------------------------------
@@ -38,9 +34,7 @@ importScripts(
 
 const FIRST_RULE_ID = 1001;
 
-const UNBLOCK_ALARM_PREFIX =
-    "unblock:";
-
+const UNBLOCK_ALARM_PREFIX = "unblock:";
 
 /*
  * --------------------------------------------------
@@ -48,17 +42,13 @@ const UNBLOCK_ALARM_PREFIX =
  * --------------------------------------------------
  */
 
-console.log(
-    "FocusGuard background service worker started."
-);
-
+console.log("FocusGuard background service worker started.");
 
 /*
  * ==================================================
  * STORAGE HELPERS
  * ==================================================
  */
-
 
 /*
  * --------------------------------------------------
@@ -67,29 +57,16 @@ console.log(
  */
 
 async function getNextRuleId() {
+  const result = await chrome.storage.local.get(["nextRuleId"]);
 
-    const result =
-        await chrome.storage.local.get(
-            ["nextRuleId"]
-        );
+  const nextRuleId = result.nextRuleId || FIRST_RULE_ID;
 
+  await chrome.storage.local.set({
+    nextRuleId: nextRuleId + 1,
+  });
 
-    const nextRuleId =
-        result.nextRuleId ||
-        FIRST_RULE_ID;
-
-
-    await chrome.storage.local.set({
-
-        nextRuleId:
-            nextRuleId + 1
-
-    });
-
-
-    return nextRuleId;
+  return nextRuleId;
 }
-
 
 /*
  * --------------------------------------------------
@@ -98,16 +75,10 @@ async function getNextRuleId() {
  */
 
 async function getBlockedSites() {
+  const result = await chrome.storage.local.get(["blockedSites"]);
 
-    const result =
-        await chrome.storage.local.get(
-            ["blockedSites"]
-        );
-
-
-    return result.blockedSites || [];
+  return result.blockedSites || [];
 }
-
 
 /*
  * --------------------------------------------------
@@ -115,19 +86,11 @@ async function getBlockedSites() {
  * --------------------------------------------------
  */
 
-async function saveBlockedSites(
-    blockedSites
-) {
-
-    await chrome.storage.local.set({
-
-        blockedSites:
-            blockedSites
-
-    });
-
+async function saveBlockedSites(blockedSites) {
+  await chrome.storage.local.set({
+    blockedSites: blockedSites,
+  });
 }
-
 
 /*
  * ==================================================
@@ -135,24 +98,15 @@ async function saveBlockedSites(
  * ==================================================
  */
 
-
 /*
  * --------------------------------------------------
  * Get alarm name for a domain
  * --------------------------------------------------
  */
 
-function getUnblockAlarmName(
-    domain
-) {
-
-    return (
-        UNBLOCK_ALARM_PREFIX +
-        domain
-    );
-
+function getUnblockAlarmName(domain) {
+  return UNBLOCK_ALARM_PREFIX + domain;
 }
-
 
 /*
  * --------------------------------------------------
@@ -169,57 +123,28 @@ function getUnblockAlarmName(
  * --------------------------------------------------
  */
 
-async function createUnblockAlarm(
-    domain,
-    expiresAt
-) {
+async function createUnblockAlarm(domain, expiresAt) {
+  const alarmName = getUnblockAlarmName(domain);
 
-    const alarmName =
-        getUnblockAlarmName(
-            domain
-        );
+  /*
+   * Do not create an alarm for
+   * an already-expired timestamp.
+   */
 
+  if (expiresAt <= Date.now()) {
+    console.log("Skipping expired alarm:", alarmName);
 
-    /*
-     * Do not create an alarm for
-     * an already-expired timestamp.
-     */
+    return;
+  }
 
-    if (
-        expiresAt <= Date.now()
-    ) {
+  await chrome.alarms.create(alarmName, {
+    when: expiresAt,
+  });
 
-        console.log(
-            "Skipping expired alarm:",
-            alarmName
-        );
+  console.log("Unblock alarm created:", alarmName);
 
-        return;
-
-    }
-
-
-    await chrome.alarms.create(
-        alarmName,
-        {
-            when: expiresAt
-        }
-    );
-
-
-    console.log(
-        "Unblock alarm created:",
-        alarmName
-    );
-
-
-    console.log(
-        "Scheduled for:",
-        new Date(expiresAt)
-    );
-
+  console.log("Scheduled for:", new Date(expiresAt));
 }
-
 
 /*
  * ==================================================
@@ -227,38 +152,21 @@ async function createUnblockAlarm(
  * ==================================================
  */
 
-
 /*
  * --------------------------------------------------
  * Build FocusGuard blocked-page URL
  * --------------------------------------------------
  */
 
-function buildBlockedPageUrl(
-    domain,
-    expiresAt
-) {
+function buildBlockedPageUrl(domain, expiresAt) {
+  const params = new URLSearchParams({
+    domain: domain,
 
-    const params =
-        new URLSearchParams({
+    expiresAt: String(expiresAt),
+  });
 
-            domain:
-                domain,
-
-            expiresAt:
-                String(expiresAt)
-
-        });
-
-
-    return chrome.runtime.getURL(
-
-        `blocked/blocked.html?${params.toString()}`
-
-    );
-
+  return chrome.runtime.getURL(`blocked/blocked.html?${params.toString()}`);
 }
-
 
 /*
  * --------------------------------------------------
@@ -266,69 +174,40 @@ function buildBlockedPageUrl(
  * --------------------------------------------------
  */
 
-function createRedirectRule(
-    ruleId,
-    domain,
-    expiresAt
-) {
+function createRedirectRule(ruleId, domain, expiresAt) {
+  const blockedPageUrl = buildBlockedPageUrl(domain, expiresAt);
 
-    const blockedPageUrl =
-        buildBlockedPageUrl(
-            domain,
-            expiresAt
-        );
+  return {
+    id: ruleId,
 
+    priority: 1,
 
-    return {
+    action: {
+      type: "redirect",
 
-        id:
-            ruleId,
+      redirect: {
+        url: blockedPageUrl,
+      },
+    },
 
-        priority:
-            1,
+    condition: {
+      /*
+       * Domain-oriented URL filter.
+       *
+       * Example:
+       *
+       * ||youtube.com
+       *
+       * This matches the intended
+       * website/domain family.
+       */
 
-        action: {
+      urlFilter: `||${domain}`,
 
-            type:
-                "redirect",
-
-            redirect: {
-
-                url:
-                    blockedPageUrl
-
-            }
-
-        },
-
-        condition: {
-
-            /*
-             * Domain-oriented URL filter.
-             *
-             * Example:
-             *
-             * ||youtube.com
-             *
-             * This matches the intended
-             * website/domain family.
-             */
-
-            urlFilter:
-                `||${domain}`,
-
-            resourceTypes: [
-
-                "main_frame"
-
-            ]
-
-        }
-
-    };
-
+      resourceTypes: ["main_frame"],
+    },
+  };
 }
-
 
 /*
  * --------------------------------------------------
@@ -337,15 +216,8 @@ function createRedirectRule(
  */
 
 async function getDynamicRules() {
-
-    return (
-        await chrome
-            .declarativeNetRequest
-            .getDynamicRules()
-    );
-
+  return await chrome.declarativeNetRequest.getDynamicRules();
 }
-
 
 /*
  * --------------------------------------------------
@@ -353,21 +225,11 @@ async function getDynamicRules() {
  * --------------------------------------------------
  */
 
-async function ruleExists(
-    ruleId
-) {
+async function ruleExists(ruleId) {
+  const rules = await getDynamicRules();
 
-    const rules =
-        await getDynamicRules();
-
-
-    return rules.some(
-        (rule) =>
-            rule.id === ruleId
-    );
-
+  return rules.some((rule) => rule.id === ruleId);
 }
-
 
 /*
  * --------------------------------------------------
@@ -381,48 +243,21 @@ async function ruleExists(
  * --------------------------------------------------
  */
 
-async function removeRuleSafely(
-    ruleId
-) {
+async function removeRuleSafely(ruleId) {
+  const exists = await ruleExists(ruleId);
 
-    const exists =
-        await ruleExists(
-            ruleId
-        );
+  if (!exists) {
+    console.log("Rule already absent:", ruleId);
 
+    return;
+  }
 
-    if (!exists) {
+  await chrome.declarativeNetRequest.updateDynamicRules({
+    removeRuleIds: [ruleId],
+  });
 
-        console.log(
-            "Rule already absent:",
-            ruleId
-        );
-
-        return;
-
-    }
-
-
-    await chrome
-        .declarativeNetRequest
-        .updateDynamicRules({
-
-            removeRuleIds: [
-
-                ruleId
-
-            ]
-
-        });
-
-
-    console.log(
-        "DNR rule removed:",
-        ruleId
-    );
-
+  console.log("DNR rule removed:", ruleId);
 }
-
 
 /*
  * ==================================================
@@ -430,362 +265,211 @@ async function removeRuleSafely(
  * ==================================================
  */
 
-
 /*
  * --------------------------------------------------
  * Handle website blocking
  * --------------------------------------------------
  */
 
-async function handleBlockWebsite(
-    message
-) {
+async function handleBlockWebsite(message) {
+  /*
+   * Normalize and validate domain.
+   */
+
+  let domain;
+
+  try {
+    domain = normalizeDomain(message.domain);
+  } catch (error) {
+    return {
+      success: false,
+
+      message: error.message,
+    };
+  }
+
+  /*
+   * Convert duration to number.
+   */
+
+  const duration = Number(message.duration);
+
+  /*
+   * Validate duration.
+   */
+
+  if (!Number.isFinite(duration) || duration <= 0) {
+    return {
+      success: false,
+
+      message: "Duration must be greater than zero.",
+    };
+  }
+
+  /*
+   * Get existing blocked sites.
+   */
+
+  const blockedSites = await getBlockedSites();
+
+  /*
+   * Check whether this domain
+   * already exists.
+   */
+
+  const existingSiteIndex = blockedSites.findIndex(
+    (site) => site.domain === domain,
+  );
+
+  /*
+   * ==================================================
+   * EXISTING WEBSITE
+   * ==================================================
+   */
+
+  if (existingSiteIndex !== -1) {
+    const existingSite = blockedSites[existingSiteIndex];
+
+    const currentTime = Date.now();
+
+    const expiresAt = currentTime + duration * 60 * 1000;
 
     /*
-     * Normalize and validate domain.
+     * Create updated redirect rule.
      */
 
-    let domain;
+    const updatedRule = createRedirectRule(
+      existingSite.ruleId,
 
+      domain,
 
-    try {
-
-        domain =
-            normalizeDomain(
-                message.domain
-            );
-
-    } catch (error) {
-
-        return {
-
-            success:
-                false,
-
-            message:
-                error.message
-
-        };
-
-    }
-
-
-    /*
-     * Convert duration to number.
-     */
-
-    const duration =
-        Number(
-            message.duration
-        );
-
-
-    /*
-     * Validate duration.
-     */
-
-    if (
-        !Number.isFinite(duration) ||
-        duration <= 0
-    ) {
-
-        return {
-
-            success:
-                false,
-
-            message:
-                "Duration must be greater than zero."
-
-        };
-
-    }
-
-
-    /*
-     * Get existing blocked sites.
-     */
-
-    const blockedSites =
-        await getBlockedSites();
-
-
-    /*
-     * Check whether this domain
-     * already exists.
-     */
-
-    const existingSiteIndex =
-        blockedSites.findIndex(
-
-            (site) =>
-                site.domain === domain
-
-        );
-
-
-    /*
-     * ==================================================
-     * EXISTING WEBSITE
-     * ==================================================
-     */
-
-    if (
-        existingSiteIndex !== -1
-    ) {
-
-        const existingSite =
-            blockedSites[
-                existingSiteIndex
-            ];
-
-
-        const currentTime =
-            Date.now();
-
-
-        const expiresAt =
-            currentTime +
-            duration * 60 * 1000;
-
-
-        /*
-         * Create updated redirect rule.
-         */
-
-        const updatedRule =
-            createRedirectRule(
-
-                existingSite.ruleId,
-
-                domain,
-
-                expiresAt
-
-            );
-
-
-        /*
-         * Replace the existing rule.
-         *
-         * Same rule ID.
-         *
-         * Old rule removed.
-         * New rule added.
-         */
-
-        await chrome
-            .declarativeNetRequest
-            .updateDynamicRules({
-
-                removeRuleIds: [
-
-                    existingSite.ruleId
-
-                ],
-
-                addRules: [
-
-                    updatedRule
-
-                ]
-
-            });
-
-
-        /*
-         * Update expiration in storage.
-         */
-
-        existingSite.expiresAt =
-            expiresAt;
-
-
-        await saveBlockedSites(
-            blockedSites
-        );
-
-
-        /*
-         * Replace/update alarm.
-         */
-
-        await createUnblockAlarm(
-
-            domain,
-
-            expiresAt
-
-        );
-
-
-        console.log(
-            "Existing website updated:",
-            domain
-        );
-
-
-        console.log(
-            "Rule ID:",
-            existingSite.ruleId
-        );
-
-
-        console.log(
-            "New expiration:",
-            new Date(expiresAt)
-        );
-
-
-        return {
-
-            success:
-                true,
-
-            message:
-                `${domain} block time updated.`
-
-        };
-
-    }
-
-
-    /*
-     * ==================================================
-     * NEW WEBSITE
-     * ==================================================
-     */
-
-
-    /*
-     * Generate unique rule ID.
-     */
-
-    const ruleId =
-        await getNextRuleId();
-
-
-    /*
-     * Calculate expiration.
-     */
-
-    const currentTime =
-        Date.now();
-
-
-    const expiresAt =
-        currentTime +
-        duration * 60 * 1000;
-
-
-    /*
-     * Create redirect rule.
-     */
-
-    const rule =
-        createRedirectRule(
-
-            ruleId,
-
-            domain,
-
-            expiresAt
-
-        );
-
-
-    /*
-     * Add DNR rule.
-     */
-
-    await chrome
-        .declarativeNetRequest
-        .updateDynamicRules({
-
-            addRules: [
-
-                rule
-
-            ]
-
-        });
-
-
-    /*
-     * Store website information.
-     */
-
-    blockedSites.push({
-
-        domain:
-            domain,
-
-        expiresAt:
-            expiresAt,
-
-        ruleId:
-            ruleId
-
-    });
-
-
-    await saveBlockedSites(
-        blockedSites
+      expiresAt,
     );
 
+    /*
+     * Replace the existing rule.
+     *
+     * Same rule ID.
+     *
+     * Old rule removed.
+     * New rule added.
+     */
+
+    await chrome.declarativeNetRequest.updateDynamicRules({
+      removeRuleIds: [existingSite.ruleId],
+
+      addRules: [updatedRule],
+    });
 
     /*
-     * Create expiration alarm.
+     * Update expiration in storage.
+     */
+
+    existingSite.expiresAt = expiresAt;
+
+    await saveBlockedSites(blockedSites);
+
+    /*
+     * Replace/update alarm.
      */
 
     await createUnblockAlarm(
+      domain,
 
-        domain,
-
-        expiresAt
-
+      expiresAt,
     );
 
+    console.log("Existing website updated:", domain);
 
-    console.log(
-        "Website blocked:",
-        domain
-    );
+    console.log("Rule ID:", existingSite.ruleId);
 
-
-    console.log(
-        "Rule ID:",
-        ruleId
-    );
-
-
-    console.log(
-        "Expires at:",
-        new Date(expiresAt)
-    );
-
-
-    console.log(
-        "Blocked page:",
-        buildBlockedPageUrl(
-            domain,
-            expiresAt
-        )
-    );
-
+    console.log("New expiration:", new Date(expiresAt));
 
     return {
+      success: true,
 
-        success:
-            true,
-
-        message:
-            `${domain} is now blocked.`
-
+      message: `${domain} block time updated.`,
     };
+  }
 
+  /*
+   * ==================================================
+   * NEW WEBSITE
+   * ==================================================
+   */
+
+  /*
+   * Generate unique rule ID.
+   */
+
+  const ruleId = await getNextRuleId();
+
+  /*
+   * Calculate expiration.
+   */
+
+  const currentTime = Date.now();
+
+  const expiresAt = currentTime + duration * 60 * 1000;
+
+  /*
+   * Create redirect rule.
+   */
+
+  const rule = createRedirectRule(
+    ruleId,
+
+    domain,
+
+    expiresAt,
+  );
+
+  /*
+   * Add DNR rule.
+   */
+
+  await chrome.declarativeNetRequest.updateDynamicRules({
+    addRules: [rule],
+  });
+
+  /*
+   * Store website information.
+   */
+
+  blockedSites.push({
+    domain: domain,
+
+    expiresAt: expiresAt,
+
+    ruleId: ruleId,
+  });
+
+  await saveBlockedSites(blockedSites);
+
+  /*
+   * Create expiration alarm.
+   */
+
+  await createUnblockAlarm(
+    domain,
+
+    expiresAt,
+  );
+
+  console.log("Website blocked:", domain);
+
+  console.log("Rule ID:", ruleId);
+
+  console.log("Expires at:", new Date(expiresAt));
+
+  console.log("Blocked page:", buildBlockedPageUrl(domain, expiresAt));
+
+  return {
+    success: true,
+
+    message: `${domain} is now blocked.`,
+  };
 }
-
 
 /*
  * ==================================================
@@ -793,161 +477,95 @@ async function handleBlockWebsite(
  * ==================================================
  */
 
-
 /*
  * --------------------------------------------------
  * Handle manual block removal
  * --------------------------------------------------
  */
 
-async function handleRemoveBlock(
-    domain
-) {
+async function handleRemoveBlock(domain) {
+  /*
+   * Normalize domain again.
+   */
 
-    /*
-     * Normalize domain again.
-     */
+  let normalizedDomain;
 
-    let normalizedDomain;
-
-
-    try {
-
-        normalizedDomain =
-            normalizeDomain(
-                domain
-            );
-
-    } catch (error) {
-
-        return {
-
-            success:
-                false,
-
-            message:
-                error.message
-
-        };
-
-    }
-
-
-    /*
-     * Get current blocks.
-     */
-
-    const blockedSites =
-        await getBlockedSites();
-
-
-    /*
-     * Find website.
-     */
-
-    const siteIndex =
-        blockedSites.findIndex(
-
-            (site) =>
-                site.domain ===
-                normalizedDomain
-
-        );
-
-
-    /*
-     * Website not found.
-     */
-
-    if (
-        siteIndex === -1
-    ) {
-
-        return {
-
-            success:
-                false,
-
-            message:
-                `${normalizedDomain} is not currently blocked.`
-
-        };
-
-    }
-
-
-    /*
-     * Get website information.
-     */
-
-    const site =
-        blockedSites[
-            siteIndex
-        ];
-
-
-    /*
-     * Remove DNR rule safely.
-     */
-
-    await removeRuleSafely(
-        site.ruleId
-    );
-
-
-    /*
-     * Clear expiration alarm.
-     */
-
-    await chrome.alarms.clear(
-
-        getUnblockAlarmName(
-            normalizedDomain
-        )
-
-    );
-
-
-    /*
-     * Remove from storage.
-     */
-
-    blockedSites.splice(
-        siteIndex,
-        1
-    );
-
-
-    await saveBlockedSites(
-        blockedSites
-    );
-
-
-    console.log(
-        "Block manually removed:",
-        normalizedDomain
-    );
-
-
+  try {
+    normalizedDomain = normalizeDomain(domain);
+  } catch (error) {
     return {
+      success: false,
 
-        success:
-            true,
-
-        message:
-            `${normalizedDomain} block removed.`
-
+      message: error.message,
     };
+  }
 
+  /*
+   * Get current blocks.
+   */
+
+  const blockedSites = await getBlockedSites();
+
+  /*
+   * Find website.
+   */
+
+  const siteIndex = blockedSites.findIndex(
+    (site) => site.domain === normalizedDomain,
+  );
+
+  /*
+   * Website not found.
+   */
+
+  if (siteIndex === -1) {
+    return {
+      success: false,
+
+      message: `${normalizedDomain} is not currently blocked.`,
+    };
+  }
+
+  /*
+   * Get website information.
+   */
+
+  const site = blockedSites[siteIndex];
+
+  /*
+   * Remove DNR rule safely.
+   */
+
+  await removeRuleSafely(site.ruleId);
+
+  /*
+   * Clear expiration alarm.
+   */
+
+  await chrome.alarms.clear(getUnblockAlarmName(normalizedDomain));
+
+  /*
+   * Remove from storage.
+   */
+
+  blockedSites.splice(siteIndex, 1);
+
+  await saveBlockedSites(blockedSites);
+
+  console.log("Block manually removed:", normalizedDomain);
+
+  return {
+    success: true,
+
+    message: `${normalizedDomain} block removed.`,
+  };
 }
-
 
 /*
  * ==================================================
  * EXPIRED BLOCK CLEANUP
  * ==================================================
  */
-
 
 /*
  * --------------------------------------------------
@@ -964,111 +582,55 @@ async function handleRemoveBlock(
  */
 
 async function cleanupExpiredBlocks() {
+  const blockedSites = await getBlockedSites();
 
-    const blockedSites =
-        await getBlockedSites();
+  const now = Date.now();
 
+  const expiredSites = blockedSites.filter((site) => site.expiresAt <= now);
 
-    const now =
-        Date.now();
+  /*
+   * Nothing to clean.
+   */
 
+  if (expiredSites.length === 0) {
+    return;
+  }
 
-    const expiredSites =
-        blockedSites.filter(
+  console.log("Expired blocks found:", expiredSites);
 
-            (site) =>
-                site.expiresAt <= now
+  /*
+   * Remove expired DNR rules.
+   */
 
-        );
+  for (const site of expiredSites) {
+    await removeRuleSafely(site.ruleId);
+  }
 
+  /*
+   * Remove expired websites
+   * from storage.
+   */
 
-    /*
-     * Nothing to clean.
-     */
+  const activeSites = blockedSites.filter((site) => site.expiresAt > now);
 
-    if (
-        expiredSites.length === 0
-    ) {
+  await saveBlockedSites(activeSites);
 
-        return;
+  /*
+   * Clear expired alarms.
+   */
 
-    }
+  for (const site of expiredSites) {
+    await chrome.alarms.clear(getUnblockAlarmName(site.domain));
+  }
 
-
-    console.log(
-        "Expired blocks found:",
-        expiredSites
-    );
-
-
-    /*
-     * Remove expired DNR rules.
-     */
-
-    for (
-        const site
-        of expiredSites
-    ) {
-
-        await removeRuleSafely(
-            site.ruleId
-        );
-
-    }
-
-
-    /*
-     * Remove expired websites
-     * from storage.
-     */
-
-    const activeSites =
-        blockedSites.filter(
-
-            (site) =>
-                site.expiresAt > now
-
-        );
-
-
-    await saveBlockedSites(
-        activeSites
-    );
-
-
-    /*
-     * Clear expired alarms.
-     */
-
-    for (
-        const site
-        of expiredSites
-    ) {
-
-        await chrome.alarms.clear(
-
-            getUnblockAlarmName(
-                site.domain
-            )
-
-        );
-
-    }
-
-
-    console.log(
-        "Expired blocks cleaned up."
-    );
-
+  console.log("Expired blocks cleaned up.");
 }
-
 
 /*
  * ==================================================
  * ALARM RESTORATION
  * ==================================================
  */
-
 
 /*
  * --------------------------------------------------
@@ -1086,76 +648,42 @@ async function cleanupExpiredBlocks() {
  */
 
 async function restoreAlarms() {
+  const blockedSites = await getBlockedSites();
 
-    const blockedSites =
-        await getBlockedSites();
+  const now = Date.now();
 
+  for (const site of blockedSites) {
+    /*
+     * Skip already expired blocks.
+     */
 
-    const now =
-        Date.now();
-
-
-    for (
-        const site
-        of blockedSites
-    ) {
-
-        /*
-         * Skip already expired blocks.
-         */
-
-        if (
-            site.expiresAt <= now
-        ) {
-
-            continue;
-
-        }
-
-
-        const alarmName =
-            getUnblockAlarmName(
-                site.domain
-            );
-
-
-        /*
-         * Check whether alarm already exists.
-         */
-
-        const existingAlarm =
-            await chrome.alarms.get(
-                alarmName
-            );
-
-
-        /*
-         * Only create if missing.
-         */
-
-        if (
-            !existingAlarm
-        ) {
-
-            await createUnblockAlarm(
-
-                site.domain,
-
-                site.expiresAt
-
-            );
-
-        }
-
+    if (site.expiresAt <= now) {
+      continue;
     }
 
+    const alarmName = getUnblockAlarmName(site.domain);
 
-    console.log(
-        "Active block alarms verified/restored."
-    );
+    /*
+     * Check whether alarm already exists.
+     */
 
+    const existingAlarm = await chrome.alarms.get(alarmName);
+
+    /*
+     * Only create if missing.
+     */
+
+    if (!existingAlarm) {
+      await createUnblockAlarm(
+        site.domain,
+
+        site.expiresAt,
+      );
+    }
+  }
+
+  console.log("Active block alarms verified/restored.");
 }
-
 
 /*
  * ==================================================
@@ -1163,146 +691,94 @@ async function restoreAlarms() {
  * ==================================================
  */
 
-
 /*
  * --------------------------------------------------
  * Listen for popup messages
  * --------------------------------------------------
  */
 
-chrome.runtime.onMessage.addListener(
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  console.log("Message received:", message);
 
-    (
-        message,
-        sender,
-        sendResponse
-    ) => {
+  /*
+   * ------------------------------------------
+   * BLOCK WEBSITE
+   * ------------------------------------------
+   */
 
-        console.log(
-            "Message received:",
-            message
-        );
+  if (message.type === "BLOCK_WEBSITE") {
+    handleBlockWebsite(message)
+      .then((response) => {
+        sendResponse(response);
+      })
 
+      .catch((error) => {
+        console.error("Blocking error:", error);
 
-        /*
-         * ------------------------------------------
-         * BLOCK WEBSITE
-         * ------------------------------------------
-         */
+        sendResponse({
+          success: false,
 
-        if (
-            message.type ===
-            "BLOCK_WEBSITE"
-        ) {
+          message: "Something went wrong while blocking the website.",
+        });
+      });
 
-            handleBlockWebsite(
-                message
-            )
+    /*
+     * Keep message channel open
+     * for async response.
+     */
 
-                .then(
-                    (response) => {
+    return true;
+  }
 
-                        sendResponse(
-                            response
-                        );
+  /*
+   * ------------------------------------------
+   * REMOVE BLOCK
+   * ------------------------------------------
+   */
 
-                    }
-                )
+  if (message.type === "REMOVE_BLOCK") {
+    handleRemoveBlock(message.domain)
+      .then((response) => {
+        sendResponse(response);
+      })
 
-                .catch(
-                    (error) => {
+      .catch((error) => {
+        console.error("Remove block error:", error);
 
-                        console.error(
-                            "Blocking error:",
-                            error
-                        );
+        sendResponse({
+          success: false,
 
+          message: "Failed to remove block.",
+        });
+      });
 
-                        sendResponse({
+    /*
+     * Keep message channel open
+     * for async response.
+     */
 
-                            success:
-                                false,
+    return true;
+  }
 
-                            message:
-                                "Something went wrong while blocking the website."
+  if (message.type === "CREATE_SCHEDULE") {
+    handleCreateSchedule(message.scheduledBlock)
+      .then((response) => {
+        sendResponse(response);
+      })
 
-                        });
+      .catch((error) => {
+        console.error("Schedule creation error:", error);
 
-                    }
-                );
+        sendResponse({
+          success: false,
 
+          message: "Failed to create schedule.",
+        });
+      });
 
-            /*
-             * Keep message channel open
-             * for async response.
-             */
-
-            return true;
-
-        }
-
-
-        /*
-         * ------------------------------------------
-         * REMOVE BLOCK
-         * ------------------------------------------
-         */
-
-        if (
-            message.type ===
-            "REMOVE_BLOCK"
-        ) {
-
-            handleRemoveBlock(
-                message.domain
-            )
-
-                .then(
-                    (response) => {
-
-                        sendResponse(
-                            response
-                        );
-
-                    }
-                )
-
-                .catch(
-                    (error) => {
-
-                        console.error(
-                            "Remove block error:",
-                            error
-                        );
-
-
-                        sendResponse({
-
-                            success:
-                                false,
-
-                            message:
-                                "Failed to remove block."
-
-                        });
-
-                    }
-                );
-
-
-            /*
-             * Keep message channel open
-             * for async response.
-             */
-
-            return true;
-
-        }
-
-    }
-
-);
-
+    return true;
+  }
+});
 
 /*
  * ==================================================
@@ -1310,223 +786,203 @@ chrome.runtime.onMessage.addListener(
  * ==================================================
  */
 
-
 /*
  * --------------------------------------------------
  * Handle expiration alarms
  * --------------------------------------------------
  */
 
-chrome.alarms.onAlarm.addListener(
-
-    async (alarm) => {
-
-        try {
-
-            console.log(
-                "Alarm fired:",
-                alarm.name
-            );
-
-
-            /*
-             * Ignore unrelated alarms.
-             */
-
-            if (
-                !alarm.name.startsWith(
-                    UNBLOCK_ALARM_PREFIX
-                )
-            ) {
-
-                return;
-
-            }
-
-
-            /*
-             * Extract domain.
-             *
-             * Example:
-             *
-             * unblock:youtube.com
-             *
-             * becomes:
-             *
-             * youtube.com
-             */
-
-            const domain =
-                alarm.name.replace(
-                    UNBLOCK_ALARM_PREFIX,
-                    ""
-                );
-
-
-            console.log(
-                "Processing expiration:",
-                domain
-            );
-
-
-            /*
-             * Get current blocked sites.
-             */
-
-            const blockedSites =
-                await getBlockedSites();
-
-
-            /*
-             * Find website.
-             */
-
-            const siteIndex =
-                blockedSites.findIndex(
-
-                    (site) =>
-                        site.domain ===
-                        domain
-
-                );
-
-
-            /*
-             * If website no longer exists,
-             * nothing to do.
-             */
-
-            if (
-                siteIndex === -1
-            ) {
-
-                console.log(
-                    "No active block found for alarm:",
-                    domain
-                );
-
-                return;
-
-            }
-
-
-            /*
-             * Get current site.
-             */
-
-            const site =
-                blockedSites[
-                    siteIndex
-                ];
-
-
-            /*
-             * --------------------------------------------------
-             * IMPORTANT:
-             *
-             * Check whether the block was
-             * extended after the alarm was created.
-             * --------------------------------------------------
-             */
-
-            if (
-                site.expiresAt >
-                Date.now()
-            ) {
-
-                console.log(
-                    "Block was extended. Keeping it active:",
-                    domain
-                );
-
-
-                /*
-                 * Recreate the correct alarm
-                 * in case the current alarm was
-                 * an older schedule.
-                 */
-
-                await createUnblockAlarm(
-
-                    domain,
-
-                    site.expiresAt
-
-                );
-
-
-                return;
-
-            }
-
-
-            /*
-             * The block has genuinely expired.
-             */
-
-
-            /*
-             * Remove DNR rule safely.
-             */
-
-            await removeRuleSafely(
-                site.ruleId
-            );
-
-
-            /*
-             * Remove website from storage.
-             */
-
-            blockedSites.splice(
-                siteIndex,
-                1
-            );
-
-
-            await saveBlockedSites(
-                blockedSites
-            );
-
-
-            /*
-             * Clear the alarm.
-             */
-
-            await chrome.alarms.clear(
-
-                getUnblockAlarmName(
-                    domain
-                )
-
-            );
-
-
-            console.log(
-                "Website successfully unblocked:",
-                domain
-            );
-
-        } catch (error) {
-
-            console.error(
-                "Alarm handling error:",
-                error
-            );
-
-        }
-
+/*
+ * --------------------------------------------------
+ * Create scheduled block
+ * --------------------------------------------------
+ */
+
+async function handleCreateSchedule(scheduledBlock) {
+  /*
+   * Validate basic structure
+   */
+
+  if (!scheduledBlock || typeof scheduledBlock !== "object") {
+    return {
+      success: false,
+
+      message: "Invalid scheduled block.",
+    };
+  }
+
+  /*
+   * Normalize domain
+   */
+
+  let domain;
+
+  try {
+    domain = normalizeDomain(scheduledBlock.domain);
+  } catch (error) {
+    return {
+      success: false,
+
+      message: error.message,
+    };
+  }
+
+  /*
+   * Validate schedule
+   */
+
+  const validation = validateSchedule(scheduledBlock.schedule);
+
+  if (!validation.valid) {
+    return {
+      success: false,
+
+      message: validation.message,
+    };
+  }
+
+  /*
+   * For this step we are NOT
+   * activating the schedule.
+   *
+   * We are only returning the
+   * validated schedule.
+   */
+
+  console.log("Valid scheduled block:", {
+    type: "scheduled",
+
+    domain: domain,
+
+    schedule: scheduledBlock.schedule,
+  });
+
+  return {
+    success: true,
+
+    message: `${domain} schedule created successfully.`,
+  };
+}
+
+chrome.alarms.onAlarm.addListener(async (alarm) => {
+  try {
+    console.log("Alarm fired:", alarm.name);
+
+    /*
+     * Ignore unrelated alarms.
+     */
+
+    if (!alarm.name.startsWith(UNBLOCK_ALARM_PREFIX)) {
+      return;
     }
 
-);
+    /*
+     * Extract domain.
+     *
+     * Example:
+     *
+     * unblock:youtube.com
+     *
+     * becomes:
+     *
+     * youtube.com
+     */
 
+    const domain = alarm.name.replace(UNBLOCK_ALARM_PREFIX, "");
+
+    console.log("Processing expiration:", domain);
+
+    /*
+     * Get current blocked sites.
+     */
+
+    const blockedSites = await getBlockedSites();
+
+    /*
+     * Find website.
+     */
+
+    const siteIndex = blockedSites.findIndex((site) => site.domain === domain);
+
+    /*
+     * If website no longer exists,
+     * nothing to do.
+     */
+
+    if (siteIndex === -1) {
+      console.log("No active block found for alarm:", domain);
+
+      return;
+    }
+
+    /*
+     * Get current site.
+     */
+
+    const site = blockedSites[siteIndex];
+
+    /*
+     * --------------------------------------------------
+     * IMPORTANT:
+     *
+     * Check whether the block was
+     * extended after the alarm was created.
+     * --------------------------------------------------
+     */
+
+    if (site.expiresAt > Date.now()) {
+      console.log("Block was extended. Keeping it active:", domain);
+
+      /*
+       * Recreate the correct alarm
+       * in case the current alarm was
+       * an older schedule.
+       */
+
+      await createUnblockAlarm(
+        domain,
+
+        site.expiresAt,
+      );
+
+      return;
+    }
+
+    /*
+     * The block has genuinely expired.
+     */
+
+    /*
+     * Remove DNR rule safely.
+     */
+
+    await removeRuleSafely(site.ruleId);
+
+    /*
+     * Remove website from storage.
+     */
+
+    blockedSites.splice(siteIndex, 1);
+
+    await saveBlockedSites(blockedSites);
+
+    /*
+     * Clear the alarm.
+     */
+
+    await chrome.alarms.clear(getUnblockAlarmName(domain));
+
+    console.log("Website successfully unblocked:", domain);
+  } catch (error) {
+    console.error("Alarm handling error:", error);
+  }
+});
 
 /*
  * ==================================================
  * SERVICE WORKER STARTUP RECOVERY
  * ==================================================
  */
-
 
 /*
  * --------------------------------------------------
@@ -1539,39 +995,25 @@ chrome.alarms.onAlarm.addListener(
  */
 
 (async () => {
+  try {
+    /*
+     * First remove expired blocks.
+     */
 
-    try {
+    await cleanupExpiredBlocks();
 
-        /*
-         * First remove expired blocks.
-         */
+    /*
+     * Then make sure every active
+     * block has an alarm.
+     */
 
-        await cleanupExpiredBlocks();
+    await restoreAlarms();
 
-
-        /*
-         * Then make sure every active
-         * block has an alarm.
-         */
-
-        await restoreAlarms();
-
-
-        console.log(
-            "FocusGuard startup recovery completed."
-        );
-
-    } catch (error) {
-
-        console.error(
-            "FocusGuard startup recovery failed:",
-            error
-        );
-
-    }
-
+    console.log("FocusGuard startup recovery completed.");
+  } catch (error) {
+    console.error("FocusGuard startup recovery failed:", error);
+  }
 })();
-
 
 /*
  * --------------------------------------------------
@@ -1583,36 +1025,16 @@ chrome.alarms.onAlarm.addListener(
  * --------------------------------------------------
  */
 
-chrome.runtime.onStartup.addListener(
+chrome.runtime.onStartup.addListener(async () => {
+  try {
+    console.log("Browser started. Recovering FocusGuard...");
 
-    async () => {
+    await cleanupExpiredBlocks();
 
-        try {
+    await restoreAlarms();
 
-            console.log(
-                "Browser started. Recovering FocusGuard..."
-            );
-
-
-            await cleanupExpiredBlocks();
-
-
-            await restoreAlarms();
-
-
-            console.log(
-                "FocusGuard browser-start recovery completed."
-            );
-
-        } catch (error) {
-
-            console.error(
-                "Browser-start recovery failed:",
-                error
-            );
-
-        }
-
-    }
-
-);
+    console.log("FocusGuard browser-start recovery completed.");
+  } catch (error) {
+    console.error("Browser-start recovery failed:", error);
+  }
+});

@@ -10,6 +10,27 @@ const blockedSitesContainer = document.getElementById("blockedSites");
 
 const siteCount = document.getElementById("siteCount");
 
+const blockType = document.getElementById("blockType");
+
+const temporaryFields = document.getElementById("temporaryFields");
+
+const scheduleFields = document.getElementById("scheduleFields");
+
+const startTime = document.getElementById("startTime");
+
+const endTime = document.getElementById("endTime");
+
+blockType.addEventListener("change", () => {
+  if (blockType.value === "scheduled") {
+    temporaryFields.classList.add("hidden");
+
+    scheduleFields.classList.remove("hidden");
+  } else {
+    temporaryFields.classList.remove("hidden");
+
+    scheduleFields.classList.add("hidden");
+  }
+});
 /*
  * --------------------------------------------------
  * Format remaining time
@@ -201,13 +222,20 @@ function updateCountdowns() {
 
 setInterval(updateCountdowns, 1000);
 
+
 /*
  * --------------------------------------------------
- * Block website
+ * Create block
  * --------------------------------------------------
  */
 
 saveButton.addEventListener("click", () => {
+  /*
+   * ------------------------------------------
+   * Normalize website
+   * ------------------------------------------
+   */
+
   let domain;
 
   try {
@@ -218,27 +246,129 @@ saveButton.addEventListener("click", () => {
     return;
   }
 
-  const duration = Number(durationInput.value);
+  /*
+   * ------------------------------------------
+   * Temporary block
+   * ------------------------------------------
+   */
 
-  if (domain === "") {
-    message.textContent = "Please enter a website.";
+  if (blockType.value === "temporary") {
+    const duration = Number(durationInput.value);
+
+    if (!duration || duration <= 0) {
+      message.textContent = "Please enter a valid duration.";
+
+      return;
+    }
+
+    chrome.runtime.sendMessage(
+      {
+        type: "BLOCK_WEBSITE",
+
+        domain: domain,
+
+        duration: duration,
+      },
+
+      (response) => {
+        if (chrome.runtime.lastError) {
+          console.error(chrome.runtime.lastError.message);
+
+          message.textContent = "Extension error.";
+
+          return;
+        }
+
+        if (!response) {
+          message.textContent = "No response from service worker.";
+
+          return;
+        }
+
+        message.textContent = response.message;
+
+        if (response.success) {
+          websiteInput.value = "";
+
+          durationInput.value = "";
+
+          loadBlockedSites();
+        }
+      },
+    );
 
     return;
   }
 
-  if (!duration || duration <= 0) {
-    message.textContent = "Please enter a valid duration.";
+  /*
+   * ------------------------------------------
+   * Scheduled block
+   * ------------------------------------------
+   */
+
+  const dayCheckboxes = document.querySelectorAll(".day-checkbox:checked");
+
+  const selectedDays = Array.from(dayCheckboxes).map((checkbox) =>
+    Number(checkbox.value),
+  );
+
+  const schedule = {
+    days: selectedDays,
+
+    startTime: startTime.value,
+
+    endTime: endTime.value,
+  };
+
+  /*
+   * ------------------------------------------
+   * Validate schedule
+   * ------------------------------------------
+   */
+
+  const validation = validateSchedule(schedule);
+
+  if (!validation.valid) {
+    message.textContent = validation.message;
 
     return;
   }
+
+  /*
+   * ------------------------------------------
+   * Create schedule object
+   * ------------------------------------------
+   */
+
+  const scheduledBlock = {
+    type: "scheduled",
+
+    domain: domain,
+
+    schedule: schedule,
+  };
+
+  console.log("Scheduled block:", scheduledBlock);
+
+  /*
+   * ------------------------------------------
+   * Send schedule to service worker
+   * ------------------------------------------
+   *
+   * IMPORTANT:
+   *
+   * The service worker does NOT activate
+   * scheduled blocking yet.
+   *
+   * We are only testing the data flow.
+   * ------------------------------------------
+   */
 
   chrome.runtime.sendMessage(
     {
-      type: "BLOCK_WEBSITE",
+      type: "CREATE_SCHEDULE",
 
-      domain: domain,
-
-      duration: duration,
+      scheduledBlock: scheduledBlock,
     },
 
     (response) => {
@@ -257,18 +387,9 @@ saveButton.addEventListener("click", () => {
       }
 
       message.textContent = response.message;
-
-      if (response.success) {
-        websiteInput.value = "";
-
-        durationInput.value = "";
-
-        loadBlockedSites();
-      }
     },
   );
 });
-
 /*
  * --------------------------------------------------
  * Initial load
@@ -283,20 +404,8 @@ loadBlockedSites();
  * --------------------------------------------------
  */
 
-chrome.storage.onChanged.addListener(
-    (
-        changes,
-        areaName
-    ) => {
-
-        if (
-            areaName === "local" &&
-            changes.blockedSites
-        ) {
-
-            loadBlockedSites();
-
-        }
-
-    }
-);
+chrome.storage.onChanged.addListener((changes, areaName) => {
+  if (areaName === "local" && changes.blockedSites) {
+    loadBlockedSites();
+  }
+});

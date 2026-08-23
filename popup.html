@@ -30,9 +30,71 @@
           autocomplete="off"
         />
 
-        <input type="number" id="durationInput" placeholder="Minutes" min="1" />
+        <select id="blockType">
+          <option value="temporary">Block for duration</option>
 
-        <button id="saveButton">Block Website</button>
+          <option value="scheduled">Scheduled block</option>
+        </select>
+
+        <div id="temporaryFields">
+          <input
+            type="number"
+            id="durationInput"
+            placeholder="Minutes"
+            min="1"
+          />
+        </div>
+
+        <div id="scheduleFields" class="hidden">
+          <p class="field-label">Select days</p>
+
+          <div class="days">
+            <label>
+              <input type="checkbox" value="1" class="day-checkbox" />
+              Mon
+            </label>
+
+            <label>
+              <input type="checkbox" value="2" class="day-checkbox" />
+              Tue
+            </label>
+
+            <label>
+              <input type="checkbox" value="3" class="day-checkbox" />
+              Wed
+            </label>
+
+            <label>
+              <input type="checkbox" value="4" class="day-checkbox" />
+              Thu
+            </label>
+
+            <label>
+              <input type="checkbox" value="5" class="day-checkbox" />
+              Fri
+            </label>
+
+            <label>
+              <input type="checkbox" value="6" class="day-checkbox" />
+              Sat
+            </label>
+
+            <label>
+              <input type="checkbox" value="0" class="day-checkbox" />
+              Sun
+            </label>
+          </div>
+
+          <label class="field-label"> Start time </label>
+
+          <input type="time" id="startTime" />
+
+          <label class="field-label"> End time </label>
+
+          <input type="time" id="endTime" />
+        </div>
+
+        <button id="saveButton">Create Block</button>
 
         <p id="message" class="message"></p>
       </section>
@@ -58,6 +120,7 @@
     </div>
 
     <script src="utils/domain.js"></script>
+    <script src="utils/schedule.js"></script>
     <script src="popup.js"></script>
   </body>
 </html>

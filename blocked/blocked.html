@@ -1,86 +1,61 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-
-<head>
-
-    <meta charset="UTF-8">
-
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1.0"
-    >
-
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>FocusGuard - Stay Focused</title>
-
+    <link rel="stylesheet" href="blocked.css" />
     <link
-        rel="stylesheet"
-        href="blocked.css"
-    >
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
+      rel="stylesheet"
+    />
+  </head>
 
-</head>
-
-
-<body>
-
+  <body>
     <main class="page">
+      <div class="card">
+        <div class="card-glow"></div>
 
-        <div class="card">
-
-            <div class="icon">
-                🚫
-            </div>
-
-
-            <h1>
-                Stay Focused
-            </h1>
-
-
-            <p class="blocked-text">
-
-                <span id="websiteName">
-                    This website
-                </span>
-
-                is currently blocked.
-
-            </p>
-
-
-            <p class="label">
-                Available again in
-            </p>
-
-
-            <div
-                id="countdown"
-                class="countdown"
-            >
-                00:00:00
-            </div>
-
-
-            <p
-                id="status"
-                class="status"
-            >
-                Your focus session is active.
-            </p>
-
-
-            <button
-                id="backButton"
-            >
-                Go Back
-            </button>
-
+        <div class="icon-container">
+          <div class="icon-wrapper">
+            <span class="icon">🚫</span>
+            <div class="icon-ring"></div>
+          </div>
         </div>
 
+        <h1 class="title">Stay Focused</h1>
+
+        <p class="blocked-text">
+          <span id="websiteName" class="domain-highlight">This website</span>
+          is currently blocked
+        </p>
+
+        <!-- Countdown Section -->
+        <div id="countdownSection">
+          <p class="label">Available again in</p>
+          <div id="countdown" class="countdown">00:00:00</div>
+          <div class="countdown-bar">
+            <div id="countdownProgress" class="countdown-progress"></div>
+          </div>
+        </div>
+
+        <!-- Schedule Info Section -->
+        <div id="scheduleSection" class="hidden">
+          <p class="label">Blocked during</p>
+          <div id="scheduleInfo" class="schedule-info">
+            <!-- Populated by JavaScript -->
+          </div>
+        </div>
+
+        <p id="status" class="status">Your focus session is active.</p>
+
+        <button id="backButton" class="btn-back">
+          <span class="btn-back-icon">←</span>
+          Go Back
+        </button>
+      </div>
     </main>
 
-
     <script src="blocked.js"></script>
-
-</body>
-
+  </body>
 </html>

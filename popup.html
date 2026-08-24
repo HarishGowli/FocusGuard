@@ -2,132 +2,166 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
     <title>FocusGuard</title>
-
     <link rel="stylesheet" href="popup.css" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
   </head>
 
   <body>
     <div class="container">
-      <header>
-        <h1>FocusGuard</h1>
-
-        <p class="subtitle">Protect your focus.</p>
+      <!-- Header with animated gradient -->
+      <header class="header">
+        <div class="header-content">
+          <div class="logo-wrapper">
+            <div class="logo-icon">🛡️</div>
+            <h1 class="logo-text">FocusGuard</h1>
+          </div>
+          <p class="subtitle">Protect your focus. Boost your productivity.</p>
+        </div>
       </header>
 
-      <!--
-            Add website section
-        -->
-
-      <section class="add-section">
-        <input
-          type="text"
-          id="websiteInput"
-          placeholder="youtube.com"
-          autocomplete="off"
-        />
-
-        <select id="blockType">
-          <option value="temporary">Block for duration</option>
-
-          <option value="scheduled">Scheduled block</option>
-        </select>
-
-        <div id="temporaryFields">
-          <input
-            type="number"
-            id="durationInput"
-            placeholder="Minutes"
-            min="1"
-          />
+      <!-- Add website section with card animation -->
+      <section class="add-section card-animate">
+        <!-- Block Type Dropdown -->
+        <div class="form-group">
+          <label class="form-label" for="blockType">
+            <span class="label-icon">📋</span> Blocking Mode
+          </label>
+          <select id="blockType" class="form-select">
+            <option value="temporary">⏱️ Block by Minutes</option>
+            <option value="scheduled">📅 Time-Based Block</option>
+          </select>
         </div>
 
-        <div id="scheduleFields" class="hidden">
-          <p class="field-label">Select days</p>
+        <!-- Website Input -->
+        <div class="form-group">
+          <label class="form-label" for="websiteInput">
+            <span class="label-icon">🌐</span> Website Domain
+          </label>
+          <div class="input-wrapper">
+            <span class="input-icon">🔗</span>
+            <input
+              type="text"
+              id="websiteInput"
+              placeholder="youtube.com"
+              autocomplete="off"
+              class="form-input"
+            />
+          </div>
+        </div>
 
-          <div class="days">
-            <label>
+        <!-- Temporary Fields (Minutes) -->
+        <div id="temporaryFields" class="form-group slide-down">
+          <label class="form-label" for="durationInput">
+            <span class="label-icon">⏰</span> Block Duration
+          </label>
+          <div class="input-wrapper">
+            <span class="input-icon">⌛</span>
+            <input
+              type="number"
+              id="durationInput"
+              placeholder="Enter minutes"
+              min="1"
+              class="form-input"
+            />
+            <span class="input-suffix">min</span>
+          </div>
+        </div>
+
+        <!-- Schedule Fields -->
+        <div id="scheduleFields" class="form-group slide-down hidden">
+          <label class="form-label">
+            <span class="label-icon">📆</span> Select Days
+          </label>
+          <div class="days-grid">
+            <label class="day-chip" data-day="1">
               <input type="checkbox" value="1" class="day-checkbox" />
-              Mon
+              <span>Mon</span>
             </label>
-
-            <label>
+            <label class="day-chip" data-day="2">
               <input type="checkbox" value="2" class="day-checkbox" />
-              Tue
+              <span>Tue</span>
             </label>
-
-            <label>
+            <label class="day-chip" data-day="3">
               <input type="checkbox" value="3" class="day-checkbox" />
-              Wed
+              <span>Wed</span>
             </label>
-
-            <label>
+            <label class="day-chip" data-day="4">
               <input type="checkbox" value="4" class="day-checkbox" />
-              Thu
+              <span>Thu</span>
             </label>
-
-            <label>
+            <label class="day-chip" data-day="5">
               <input type="checkbox" value="5" class="day-checkbox" />
-              Fri
+              <span>Fri</span>
             </label>
-
-            <label>
+            <label class="day-chip" data-day="6">
               <input type="checkbox" value="6" class="day-checkbox" />
-              Sat
+              <span>Sat</span>
             </label>
-
-            <label>
+            <label class="day-chip" data-day="0">
               <input type="checkbox" value="0" class="day-checkbox" />
-              Sun
+              <span>Sun</span>
             </label>
           </div>
 
-          <label class="field-label"> Start time </label>
-
-          <input type="time" id="startTime" />
-
-          <label class="field-label"> End time </label>
-
-          <input type="time" id="endTime" />
+          <div class="time-inputs">
+            <div class="time-group">
+              <label class="time-label">🟢 Start</label>
+              <input type="time" id="startTime" class="form-input time-input" />
+            </div>
+            <div class="time-arrow">→</div>
+            <div class="time-group">
+              <label class="time-label">🔴 End</label>
+              <input type="time" id="endTime" class="form-input time-input" />
+            </div>
+          </div>
         </div>
 
-        <button id="saveButton">Create Block</button>
-
-        <button id="cancelEditButton" class="cancel-button hidden">
-          Cancel
-        </button>
+        <!-- Action Buttons -->
+        <div class="button-group">
+          <button id="saveButton" class="btn btn-primary btn-animate">
+            <span class="btn-icon">✨</span>
+            <span class="btn-text">Create Block</span>
+          </button>
+          <button
+            id="cancelEditButton"
+            class="btn btn-secondary btn-animate hidden"
+          >
+            <span class="btn-icon">↩️</span>
+            <span class="btn-text">Cancel</span>
+          </button>
+        </div>
 
         <p id="message" class="message"></p>
       </section>
 
-      <!--
-            Active blocked websites
-        -->
-
-      <section class="blocked-section">
+      <!-- Active Blocks Section -->
+      <section class="blocked-section card-animate">
         <div class="section-header">
-          <h2>Active Blocks</h2>
-
-          <span id="siteCount"> 0 </span>
+          <div class="section-title">
+            <span class="section-icon">🔒</span>
+            <h2>Active Blocks</h2>
+          </div>
+          <span id="siteCount" class="badge">0</span>
         </div>
-
         <div id="blockedSites" class="blocked-sites">
-          <!--
-                    Sites will be inserted
-                    dynamically using JavaScript.
-                -->
+          <!-- Sites will be inserted dynamically -->
         </div>
       </section>
-      <section class="blocked-section">
+
+      <!-- Scheduled Blocks Section -->
+      <section class="blocked-section card-animate">
         <div class="section-header">
-          <h2>Scheduled Blocks</h2>
-
-          <span id="scheduleCount"> 0 </span>
+          <div class="section-title">
+            <span class="section-icon">📅</span>
+            <h2>Scheduled Blocks</h2>
+          </div>
+          <span id="scheduleCount" class="badge">0</span>
         </div>
-
         <div id="scheduledBlocks" class="blocked-sites">
           <!-- Scheduled blocks appear here -->
         </div>

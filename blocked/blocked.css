@@ -1,133 +1,454 @@
 * {
-    box-sizing: border-box;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
 }
-
 
 body {
-    margin: 0;
-
-    min-height: 100vh;
-
-    font-family:
-        Arial,
-        sans-serif;
-
-    background: #f5f7fa;
-
-    color: #222;
+  margin: 0;
+  min-height: 100vh;
+  font-family:
+    "Inter",
+    -apple-system,
+    BlinkMacSystemFont,
+    sans-serif;
+  background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  position: relative;
+  overflow: hidden;
 }
 
+body::before {
+  content: "";
+  position: fixed;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background:
+    radial-gradient(
+      circle at 30% 40%,
+      rgba(100, 180, 246, 0.1) 0%,
+      transparent 60%
+    ),
+    radial-gradient(
+      circle at 70% 60%,
+      rgba(15, 52, 96, 0.15) 0%,
+      transparent 50%
+    );
+  animation: bgFloat 20s ease-in-out infinite;
+}
+
+@keyframes bgFloat {
+  0%,
+  100% {
+    transform: translate(0, 0) rotate(0deg);
+  }
+  33% {
+    transform: translate(2%, -2%) rotate(1deg);
+  }
+  66% {
+    transform: translate(-2%, 2%) rotate(-1deg);
+  }
+}
 
 .page {
-    min-height: 100vh;
-
-    display: flex;
-
-    justify-content: center;
-
-    align-items: center;
-
-    padding: 20px;
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+  width: 100%;
+  position: relative;
+  z-index: 1;
 }
 
+/* ============================================
+   CARD
+   ============================================ */
 
 .card {
-    width: 100%;
-
-    max-width: 520px;
-
-    padding: 50px 35px;
-
-    text-align: center;
-
-    background: white;
-
-    border-radius: 16px;
-
-    box-shadow:
-        0 10px 30px
-        rgba(0, 0, 0, 0.08);
+  width: 100%;
+  max-width: 480px;
+  padding: 48px 36px 40px;
+  text-align: center;
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(40px);
+  -webkit-backdrop-filter: blur(40px);
+  border-radius: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.5);
+  position: relative;
+  overflow: hidden;
+  animation: cardEntrance 0.8s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
+@keyframes cardEntrance {
+  from {
+    opacity: 0;
+    transform: scale(0.9) translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.card-glow {
+  position: absolute;
+  top: -30%;
+  left: -30%;
+  width: 160%;
+  height: 160%;
+  background: radial-gradient(
+    circle at 30% 20%,
+    rgba(100, 180, 246, 0.08) 0%,
+    transparent 60%
+  );
+  animation: glowPulse 4s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes glowPulse {
+  0%,
+  100% {
+    opacity: 0.5;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.05);
+  }
+}
+
+/* ============================================
+   ICON
+   ============================================ */
+
+.icon-container {
+  position: relative;
+  display: inline-block;
+  margin-bottom: 20px;
+}
+
+.icon-wrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
 
 .icon {
-    font-size: 60px;
-
-    margin-bottom: 20px;
+  font-size: 64px;
+  position: relative;
+  z-index: 2;
+  animation: iconBounce 2s ease-in-out infinite;
 }
 
-
-h1 {
-    margin: 0 0 15px;
-
-    font-size: 32px;
+@keyframes iconBounce {
+  0%,
+  100% {
+    transform: scale(1) rotate(0deg);
+  }
+  50% {
+    transform: scale(1.1) rotate(-3deg);
+  }
 }
 
+.icon-ring {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 90px;
+  height: 90px;
+  margin: -45px 0 0 -45px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  animation: ringPulse 2s ease-in-out infinite;
+}
+
+@keyframes ringPulse {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.5;
+  }
+  50% {
+    transform: scale(1.2);
+    opacity: 0;
+  }
+}
+
+/* ============================================
+   TITLE & TEXT
+   ============================================ */
+
+.title {
+  margin: 0 0 12px;
+  font-size: 32px;
+  font-weight: 800;
+  color: white;
+  letter-spacing: -0.5px;
+  background: linear-gradient(135deg, #ffffff 0%, #64b5f6 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
 
 .blocked-text {
-    font-size: 18px;
-
-    line-height: 1.6;
-
-    color: #555;
+  font-size: 16px;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.7);
+  margin-bottom: 28px;
 }
 
-
-#websiteName {
-    font-weight: bold;
-
-    color: #222;
+.domain-highlight {
+  font-weight: 700;
+  color: #64b5f6;
+  padding: 2px 8px;
+  background: rgba(100, 180, 246, 0.15);
+  border-radius: 6px;
 }
 
+/* ============================================
+   COUNTDOWN
+   ============================================ */
 
 .label {
-    margin-top: 35px;
-
-    margin-bottom: 8px;
-
-    color: #777;
-
-    font-size: 14px;
+  margin-bottom: 8px;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
 }
-
 
 .countdown {
-    font-size: 48px;
-
-    font-weight: bold;
-
-    letter-spacing: 2px;
-
-    margin: 10px 0 20px;
+  font-size: 56px;
+  font-weight: 900;
+  letter-spacing: 4px;
+  color: white;
+  margin: 8px 0 16px;
+  font-variant-numeric: tabular-nums;
+  background: linear-gradient(135deg, #ffffff 0%, #64b5f6 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: countPulse 1s ease-in-out infinite;
 }
 
+@keyframes countPulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.02);
+  }
+}
+
+.countdown-bar {
+  width: 100%;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 20px;
+}
+
+.countdown-progress {
+  height: 100%;
+  background: linear-gradient(90deg, #64b5f6, #0f3460);
+  border-radius: 4px;
+  transition: width 1s linear;
+  width: 100%;
+}
+
+/* ============================================
+   SCHEDULE INFO
+   ============================================ */
+
+.schedule-info {
+  margin: 12px 0 20px;
+  padding: 16px 20px;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  text-align: left;
+}
+
+.schedule-detail {
+  display: flex;
+  justify-content: space-between;
+  padding: 6px 0;
+  font-size: 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.schedule-detail:last-child {
+  border-bottom: none;
+}
+
+.schedule-label {
+  color: rgba(255, 255, 255, 0.5);
+  font-weight: 500;
+  font-size: 13px;
+}
+
+.schedule-value {
+  color: white;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+/* ============================================
+   STATUS
+   ============================================ */
 
 .status {
-    color: #777;
-
-    font-size: 14px;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 14px;
+  margin-bottom: 24px;
+  min-height: 24px;
 }
 
+/* ============================================
+   BACK BUTTON
+   ============================================ */
 
-button {
-    margin-top: 25px;
-
-    padding: 12px 25px;
-
-    border: none;
-
-    border-radius: 8px;
-
-    background: #222;
-
-    color: white;
-
-    font-size: 14px;
-
-    cursor: pointer;
+.btn-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 32px;
+  border: none;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #64b5f6, #0f3460);
+  color: white;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: "Inter", sans-serif;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+  box-shadow: 0 4px 20px rgba(100, 180, 246, 0.3);
+  position: relative;
+  overflow: hidden;
 }
 
+.btn-back::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.2),
+    transparent
+  );
+  transition: left 0.5s ease;
+}
 
-button:hover {
-    opacity: 0.9;
+.btn-back:hover::before {
+  left: 100%;
+}
+
+.btn-back:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 8px 30px rgba(100, 180, 246, 0.4);
+}
+
+.btn-back:active {
+  transform: scale(0.95);
+}
+
+.btn-back-icon {
+  font-size: 18px;
+  transition: transform 0.3s ease;
+}
+
+.btn-back:hover .btn-back-icon {
+  transform: translateX(-4px);
+}
+
+/* ============================================
+   HIDDEN STATE
+   ============================================ */
+
+.hidden {
+  display: none !important;
+}
+
+/* ============================================
+   RESPONSIVE
+   ============================================ */
+
+@media (max-width: 520px) {
+  .card {
+    padding: 32px 20px 28px;
+  }
+
+  .title {
+    font-size: 26px;
+  }
+
+  .countdown {
+    font-size: 40px;
+  }
+
+  .icon {
+    font-size: 48px;
+  }
+
+  .icon-ring {
+    width: 70px;
+    height: 70px;
+    margin: -35px 0 0 -35px;
+  }
+
+  .blocked-text {
+    font-size: 14px;
+  }
+
+  .schedule-info {
+    padding: 12px 16px;
+  }
+
+  .schedule-detail {
+    font-size: 13px;
+  }
+
+  .btn-back {
+    padding: 10px 24px;
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 380px) {
+  .card {
+    padding: 24px 16px 20px;
+  }
+
+  .title {
+    font-size: 22px;
+  }
+
+  .countdown {
+    font-size: 32px;
+  }
+
+  .icon {
+    font-size: 40px;
+  }
+
+  .icon-ring {
+    width: 60px;
+    height: 60px;
+    margin: -30px 0 0 -30px;
+  }
 }

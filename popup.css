@@ -1,60 +1,42 @@
 * {
-    box-sizing: border-box;
+  box-sizing: border-box;
 }
-
 
 body {
+  margin: 0;
 
-    margin: 0;
+  width: 360px;
 
-    width: 360px;
+  font-family: Arial, sans-serif;
 
-    font-family:
-        Arial,
-        sans-serif;
+  background: #f5f7fa;
 
-    background: #f5f7fa;
-
-    color: #222;
-
+  color: #222;
 }
-
 
 .container {
-
-    padding: 18px;
-
+  padding: 18px;
 }
-
 
 header {
+  text-align: center;
 
-    text-align: center;
-
-    margin-bottom: 18px;
-
+  margin-bottom: 18px;
 }
-
 
 h1 {
+  margin: 0;
 
-    margin: 0;
-
-    font-size: 24px;
-
+  font-size: 24px;
 }
-
 
 .subtitle {
+  margin: 5px 0 0;
 
-    margin: 5px 0 0;
+  font-size: 13px;
 
-    font-size: 13px;
-
-    color: #777;
-
+  color: #777;
 }
-
 
 /*
  * --------------------------------------------------
@@ -63,80 +45,62 @@ h1 {
  */
 
 .add-section {
+  background: white;
 
-    background: white;
+  padding: 14px;
 
-    padding: 14px;
+  border-radius: 10px;
 
-    border-radius: 10px;
-
-    box-shadow:
-        0 3px 10px
-        rgba(0, 0, 0, 0.05);
-
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.05);
 }
-
 
 input {
+  width: 100%;
 
-    width: 100%;
+  padding: 9px;
 
-    padding: 9px;
+  margin-bottom: 8px;
 
-    margin-bottom: 8px;
+  border: 1px solid #ccc;
 
-    border:
-        1px solid #ccc;
+  border-radius: 6px;
 
-    border-radius: 6px;
-
-    font-size: 13px;
-
+  font-size: 13px;
 }
-
 
 button {
+  width: 100%;
 
-    width: 100%;
+  padding: 10px;
 
-    padding: 10px;
+  border: none;
 
-    border: none;
+  border-radius: 6px;
 
-    border-radius: 6px;
+  background: #222;
 
-    background: #222;
+  color: white;
 
-    color: white;
+  font-size: 13px;
 
-    font-size: 13px;
+  font-weight: 600;
 
-    font-weight: 600;
-
-    cursor: pointer;
-
+  cursor: pointer;
 }
-
 
 button:hover {
-
-    opacity: 0.9;
-
+  opacity: 0.9;
 }
-
 
 .message {
+  min-height: 18px;
 
-    min-height: 18px;
+  margin: 8px 0 0;
 
-    margin: 8px 0 0;
+  font-size: 12px;
 
-    font-size: 12px;
-
-    text-align: center;
-
+  text-align: center;
 }
-
 
 /*
  * --------------------------------------------------
@@ -145,50 +109,38 @@ button:hover {
  */
 
 .blocked-section {
-
-    margin-top: 18px;
-
+  margin-top: 18px;
 }
-
 
 .section-header {
+  display: flex;
 
-    display: flex;
+  justify-content: space-between;
 
-    justify-content: space-between;
+  align-items: center;
 
-    align-items: center;
-
-    margin-bottom: 10px;
-
+  margin-bottom: 10px;
 }
-
 
 .section-header h2 {
+  margin: 0;
 
-    margin: 0;
-
-    font-size: 16px;
-
+  font-size: 16px;
 }
-
 
 #siteCount {
+  min-width: 22px;
 
-    min-width: 22px;
+  padding: 3px 7px;
 
-    padding: 3px 7px;
+  border-radius: 20px;
 
-    border-radius: 20px;
+  background: #eee;
 
-    background: #eee;
+  font-size: 11px;
 
-    font-size: 11px;
-
-    text-align: center;
-
+  text-align: center;
 }
-
 
 /*
  * --------------------------------------------------
@@ -197,186 +149,176 @@ button:hover {
  */
 
 .blocked-sites {
+  display: flex;
 
-    display: flex;
+  flex-direction: column;
 
-    flex-direction: column;
-
-    gap: 8px;
-
+  gap: 8px;
 }
-
 
 .site-card {
+  padding: 12px;
 
-    padding: 12px;
+  background: white;
 
-    background: white;
+  border-radius: 9px;
 
-    border-radius: 9px;
-
-    box-shadow:
-        0 2px 8px
-        rgba(0, 0, 0, 0.05);
-
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
-
 
 .site-top {
+  display: flex;
 
-    display: flex;
+  justify-content: space-between;
 
-    justify-content: space-between;
-
-    align-items: center;
-
+  align-items: center;
 }
-
 
 .site-domain {
+  font-size: 13px;
 
-    font-size: 13px;
+  font-weight: 600;
 
-    font-weight: 600;
-
-    word-break: break-all;
-
+  word-break: break-all;
 }
-
 
 .status {
+  font-size: 10px;
 
-    font-size: 10px;
-
-    font-weight: 600;
-
+  font-weight: 600;
 }
-
 
 .status.active {
-
-    color: #16803c;
-
+  color: #16803c;
 }
-
 
 .remaining {
+  margin-top: 7px;
 
-    margin-top: 7px;
+  font-size: 12px;
 
-    font-size: 12px;
-
-    color: #666;
-
+  color: #666;
 }
-
 
 .empty-state {
+  padding: 20px;
 
-    padding: 20px;
+  text-align: center;
 
-    text-align: center;
+  color: #888;
 
-    color: #888;
+  background: white;
 
-    background: white;
+  border-radius: 9px;
 
-    border-radius: 9px;
-
-    font-size: 12px;
-
+  font-size: 12px;
 }
 .remove-button {
-    width: auto;
+  width: auto;
 
-    margin-top: 10px;
+  margin-top: 10px;
 
-    padding: 6px 10px;
+  padding: 6px 10px;
 
-    background: #eee;
+  background: #eee;
 
-    color: #333;
+  color: #333;
 
-    font-size: 11px;
+  font-size: 11px;
 
-    font-weight: 500;
+  font-weight: 500;
 }
 
-
 .remove-button:hover {
-    background: #ddd;
+  background: #ddd;
 
-    opacity: 1;
+  opacity: 1;
 }
 
 select {
-    width: 100%;
+  width: 100%;
 
-    padding: 9px;
+  padding: 9px;
 
-    margin-bottom: 8px;
+  margin-bottom: 8px;
 
-    border:
-        1px solid #ccc;
+  border: 1px solid #ccc;
 
-    border-radius: 6px;
+  border-radius: 6px;
 
-    font-size: 13px;
+  font-size: 13px;
 
-    background: white;
+  background: white;
 }
-
 
 .hidden {
-    display: none;
+  display: none;
 }
-
 
 .field-label {
-    display: block;
+  display: block;
 
-    margin: 8px 0 5px;
+  margin: 8px 0 5px;
 
-    font-size: 12px;
+  font-size: 12px;
 
-    font-weight: 600;
+  font-weight: 600;
 
-    color: #555;
+  color: #555;
 }
-
 
 .days {
-    display: flex;
+  display: flex;
 
-    flex-wrap: wrap;
+  flex-wrap: wrap;
 
-    gap: 6px;
+  gap: 6px;
 
-    margin-bottom: 10px;
+  margin-bottom: 10px;
 }
-
 
 .days label {
-    display: flex;
+  display: flex;
 
-    align-items: center;
+  align-items: center;
 
-    gap: 3px;
+  gap: 3px;
 
-    padding: 5px 7px;
+  padding: 5px 7px;
 
-    background: #f1f1f1;
+  background: #f1f1f1;
 
-    border-radius: 5px;
+  border-radius: 5px;
 
-    font-size: 11px;
+  font-size: 11px;
 
-    cursor: pointer;
+  cursor: pointer;
 }
 
-
 .days input {
-    width: auto;
+  width: auto;
 
-    margin: 0;
+  margin: 0;
+}
+
+.remove-schedule-button {
+  width: auto;
+
+  margin-top: 10px;
+
+  padding: 6px 10px;
+
+  background: #eee;
+
+  color: #333;
+
+  font-size: 11px;
+
+  font-weight: 500;
+}
+
+.remove-schedule-button:hover {
+  background: #ddd;
+
+  opacity: 1;
 }

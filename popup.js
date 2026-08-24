@@ -20,6 +20,172 @@ const startTime = document.getElementById("startTime");
 
 const endTime = document.getElementById("endTime");
 
+const scheduledBlocksContainer = document.getElementById("scheduledBlocks");
+
+const scheduleCount = document.getElementById("scheduleCount");
+
+/*
+ * --------------------------------------------------
+ * Load scheduled blocks
+ * --------------------------------------------------
+ */
+
+async function loadScheduledBlocks() {
+  try {
+    const result = await chrome.storage.local.get(["scheduledBlocks"]);
+
+    const scheduledBlocks = result.scheduledBlocks || [];
+
+    renderScheduledBlocks(scheduledBlocks);
+  } catch (error) {
+    console.error("Failed to load scheduled blocks:", error);
+  }
+}
+
+function formatScheduleDays(days) {
+  const dayNames = {
+    0: "Sun",
+
+    1: "Mon",
+
+    2: "Tue",
+
+    3: "Wed",
+
+    4: "Thu",
+
+    5: "Fri",
+
+    6: "Sat",
+  };
+
+  return days.map((day) => dayNames[day]).join(" ");
+}
+
+function renderScheduledBlocks(schedules) {
+  scheduledBlocksContainer.innerHTML = "";
+
+  scheduleCount.textContent = schedules.length;
+
+  if (schedules.length === 0) {
+    scheduledBlocksContainer.innerHTML = `
+
+            <div class="empty-state">
+
+                No scheduled blocks.
+
+            </div>
+
+        `;
+
+    return;
+  }
+
+  schedules.forEach((schedule) => {
+    const card = document.createElement("div");
+
+    card.className = "site-card";
+
+    const status = schedule.active ? "ACTIVE" : "INACTIVE";
+
+    const statusClass = schedule.active ? "active" : "";
+
+    card.innerHTML = `
+
+                <div class="site-top">
+
+                    <span
+                        class="site-domain"
+                    >
+                        ${schedule.domain}
+                    </span>
+
+                    <span
+                        class="status ${statusClass}"
+                    >
+                        ${status}
+                    </span>
+
+                </div>
+
+
+                <div class="remaining">
+
+                    Days:
+                    ${formatScheduleDays(schedule.schedule.days)}
+
+                </div>
+
+
+                <div class="remaining">
+
+                    Time:
+                    ${schedule.schedule.startTime}
+                    →
+                    ${schedule.schedule.endTime}
+
+                </div>
+
+
+                <button
+                    class="remove-schedule-button"
+                    data-schedule-id="${schedule.id}"
+                >
+                    Remove Schedule
+                </button>
+
+            `;
+
+    scheduledBlocksContainer.appendChild(card);
+  });
+
+  /*
+   * Attach remove buttons.
+   */
+
+  const removeButtons = document.querySelectorAll(".remove-schedule-button");
+
+  removeButtons.forEach((button) => {
+    button.addEventListener("click", () => {
+      const scheduleId = button.dataset.scheduleId;
+
+      removeScheduledBlock(scheduleId);
+    });
+  });
+}
+
+function removeScheduledBlock(scheduleId) {
+  chrome.runtime.sendMessage(
+    {
+      type: "REMOVE_SCHEDULE",
+
+      scheduleId: scheduleId,
+    },
+
+    (response) => {
+      if (chrome.runtime.lastError) {
+        console.error(chrome.runtime.lastError.message);
+
+        message.textContent = "Extension error.";
+
+        return;
+      }
+
+      if (!response) {
+        message.textContent = "No response from service worker.";
+
+        return;
+      }
+
+      message.textContent = response.message;
+
+      if (response.success) {
+        loadScheduledBlocks();
+      }
+    },
+  );
+}
+
 blockType.addEventListener("change", () => {
   if (blockType.value === "scheduled") {
     temporaryFields.classList.add("hidden");
@@ -222,7 +388,6 @@ function updateCountdowns() {
 
 setInterval(updateCountdowns, 1000);
 
-
 /*
  * --------------------------------------------------
  * Create block
@@ -398,6 +563,8 @@ saveButton.addEventListener("click", () => {
 
 loadBlockedSites();
 
+loadScheduledBlocks();
+
 /*
  * --------------------------------------------------
  * Listen for storage changes
@@ -405,7 +572,15 @@ loadBlockedSites();
  */
 
 chrome.storage.onChanged.addListener((changes, areaName) => {
-  if (areaName === "local" && changes.blockedSites) {
+  if (areaName !== "local") {
+    return;
+  }
+
+  if (changes.blockedSites) {
     loadBlockedSites();
+  }
+
+  if (changes.scheduledBlocks) {
+    loadScheduledBlocks();
   }
 });

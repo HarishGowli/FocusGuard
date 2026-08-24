@@ -1,28 +1,391 @@
-const websiteInput = document.getElementById("websiteInput");
+/*
+ * ==================================================
+ * FocusGuard - popup.js
+ * ==================================================
+ */
 
-const durationInput = document.getElementById("durationInput");
 
-const saveButton = document.getElementById("saveButton");
+/*
+ * --------------------------------------------------
+ * DOM REFERENCES
+ * --------------------------------------------------
+ */
 
-const message = document.getElementById("message");
+const websiteInput =
+  document.getElementById("websiteInput");
 
-const blockedSitesContainer = document.getElementById("blockedSites");
+const durationInput =
+  document.getElementById("durationInput");
 
-const siteCount = document.getElementById("siteCount");
+const saveButton =
+  document.getElementById("saveButton");
 
-const blockType = document.getElementById("blockType");
+const message =
+  document.getElementById("message");
 
-const temporaryFields = document.getElementById("temporaryFields");
+const blockedSitesContainer =
+  document.getElementById("blockedSites");
 
-const scheduleFields = document.getElementById("scheduleFields");
+const siteCount =
+  document.getElementById("siteCount");
 
-const startTime = document.getElementById("startTime");
+const blockType =
+  document.getElementById("blockType");
 
-const endTime = document.getElementById("endTime");
+const temporaryFields =
+  document.getElementById("temporaryFields");
 
-const scheduledBlocksContainer = document.getElementById("scheduledBlocks");
+const scheduleFields =
+  document.getElementById("scheduleFields");
 
-const scheduleCount = document.getElementById("scheduleCount");
+const startTime =
+  document.getElementById("startTime");
+
+const endTime =
+  document.getElementById("endTime");
+
+const scheduledBlocksContainer =
+  document.getElementById("scheduledBlocks");
+
+const scheduleCount =
+  document.getElementById("scheduleCount");
+
+const cancelEditButton =
+  document.getElementById("cancelEditButton");
+
+
+/*
+ * --------------------------------------------------
+ * EDIT STATE
+ * --------------------------------------------------
+ *
+ * null = creating a new block
+ *
+ * schedule ID = editing an existing schedule
+ *
+ * --------------------------------------------------
+ */
+
+let editingScheduleId = null;
+
+
+/*
+ * ==================================================
+ * SCHEDULE EDITING
+ * ==================================================
+ */
+
+
+/*
+ * --------------------------------------------------
+ * Start editing a scheduled block
+ * --------------------------------------------------
+ */
+
+async function startEditingSchedule(
+  scheduleId
+) {
+
+  try {
+
+    const result =
+      await chrome.storage.local.get(
+        ["scheduledBlocks"]
+      );
+
+
+    const scheduledBlocks =
+      result.scheduledBlocks || [];
+
+
+    const schedule =
+      scheduledBlocks.find(
+        (item) =>
+          item.id === scheduleId
+      );
+
+
+    if (!schedule) {
+
+      message.textContent =
+        "Scheduled block not found.";
+
+      return;
+
+    }
+
+
+    /*
+     * Enter edit mode.
+     */
+
+    editingScheduleId =
+      scheduleId;
+
+
+    /*
+     * Set website.
+     */
+
+    websiteInput.value =
+      schedule.domain;
+
+
+    /*
+     * Select scheduled mode.
+     */
+
+    blockType.value =
+      "scheduled";
+
+
+    temporaryFields
+      .classList
+      .add("hidden");
+
+
+    scheduleFields
+      .classList
+      .remove("hidden");
+
+
+    /*
+     * Select days.
+     */
+
+    const dayCheckboxes =
+      document.querySelectorAll(
+        ".day-checkbox"
+      );
+
+
+    dayCheckboxes.forEach(
+      (checkbox) => {
+
+        checkbox.checked =
+          schedule.schedule.days.includes(
+            Number(
+              checkbox.value
+            )
+          );
+
+      }
+    );
+
+
+    /*
+     * Set times.
+     */
+
+    startTime.value =
+      schedule.schedule.startTime;
+
+
+    endTime.value =
+      schedule.schedule.endTime;
+
+
+    /*
+     * Change button text.
+     */
+
+    saveButton.textContent =
+      "Update Schedule";
+
+
+    /*
+     * Show cancel button.
+     */
+
+    cancelEditButton
+      .classList
+      .remove("hidden");
+
+
+    message.textContent =
+      "Editing scheduled block.";
+
+  } catch (error) {
+
+    console.error(
+      "Failed to edit schedule:",
+      error
+    );
+
+
+    message.textContent =
+      "Failed to load scheduled block.";
+
+  }
+
+}
+
+
+/*
+ * --------------------------------------------------
+ * Cancel schedule editing
+ * --------------------------------------------------
+ */
+
+cancelEditButton.addEventListener(
+  "click",
+  () => {
+
+    resetScheduleForm();
+
+    message.textContent = "";
+
+  }
+);
+
+
+/*
+ * --------------------------------------------------
+ * Reset schedule form
+ * --------------------------------------------------
+ */
+
+function resetScheduleForm() {
+
+  editingScheduleId =
+    null;
+
+
+  websiteInput.value =
+    "";
+
+  durationInput.value =
+    "";
+
+  startTime.value =
+    "";
+
+  endTime.value =
+    "";
+
+
+  /*
+   * Uncheck all days.
+   */
+
+  document
+    .querySelectorAll(
+      ".day-checkbox"
+    )
+    .forEach(
+      (checkbox) => {
+
+        checkbox.checked =
+          false;
+
+      }
+    );
+
+
+  /*
+   * Reset mode.
+   */
+
+  blockType.value =
+    "temporary";
+
+
+  temporaryFields
+    .classList
+    .remove("hidden");
+
+
+  scheduleFields
+    .classList
+    .add("hidden");
+
+
+  /*
+   * Reset buttons.
+   */
+
+  saveButton.textContent =
+    "Create Block";
+
+
+  cancelEditButton
+    .classList
+    .add("hidden");
+
+}
+
+
+/*
+ * ==================================================
+ * SCHEDULE MODE SWITCHING
+ * ==================================================
+ */
+
+blockType.addEventListener(
+  "change",
+  () => {
+
+    /*
+     * If user switches to temporary mode
+     * while editing a schedule, exit edit mode.
+     */
+
+    if (
+      blockType.value ===
+      "temporary"
+    ) {
+
+      temporaryFields
+        .classList
+        .remove("hidden");
+
+
+      scheduleFields
+        .classList
+        .add("hidden");
+
+
+      if (
+        editingScheduleId
+      ) {
+
+        editingScheduleId =
+          null;
+
+
+        saveButton.textContent =
+          "Create Block";
+
+
+        cancelEditButton
+          .classList
+          .add("hidden");
+
+      }
+
+    } else {
+
+      temporaryFields
+        .classList
+        .add("hidden");
+
+
+      scheduleFields
+        .classList
+        .remove("hidden");
+
+    }
+
+  }
+);
+
+
+/*
+ * ==================================================
+ * SCHEDULED BLOCKS
+ * ==================================================
+ */
+
 
 /*
  * --------------------------------------------------
@@ -31,19 +394,47 @@ const scheduleCount = document.getElementById("scheduleCount");
  */
 
 async function loadScheduledBlocks() {
+
   try {
-    const result = await chrome.storage.local.get(["scheduledBlocks"]);
 
-    const scheduledBlocks = result.scheduledBlocks || [];
+    const result =
+      await chrome.storage.local.get(
+        ["scheduledBlocks"]
+      );
 
-    renderScheduledBlocks(scheduledBlocks);
+
+    const scheduledBlocks =
+      result.scheduledBlocks || [];
+
+
+    renderScheduledBlocks(
+      scheduledBlocks
+    );
+
   } catch (error) {
-    console.error("Failed to load scheduled blocks:", error);
+
+    console.error(
+      "Failed to load scheduled blocks:",
+      error
+    );
+
   }
+
 }
 
-function formatScheduleDays(days) {
+
+/*
+ * --------------------------------------------------
+ * Format schedule days
+ * --------------------------------------------------
+ */
+
+function formatScheduleDays(
+  days
+) {
+
   const dayNames = {
+
     0: "Sun",
 
     1: "Mon",
@@ -56,174 +447,393 @@ function formatScheduleDays(days) {
 
     5: "Fri",
 
-    6: "Sat",
+    6: "Sat"
+
   };
 
-  return days.map((day) => dayNames[day]).join(" ");
+
+  return days
+    .map(
+      (day) =>
+        dayNames[day]
+    )
+    .join(" ");
+
 }
 
-function renderScheduledBlocks(schedules) {
-  scheduledBlocksContainer.innerHTML = "";
 
-  scheduleCount.textContent = schedules.length;
+/*
+ * --------------------------------------------------
+ * Render scheduled blocks
+ * --------------------------------------------------
+ */
 
-  if (schedules.length === 0) {
-    scheduledBlocksContainer.innerHTML = `
+function renderScheduledBlocks(
+  schedules
+) {
 
-            <div class="empty-state">
-
-                No scheduled blocks.
-
-            </div>
-
-        `;
-
-    return;
-  }
-
-  schedules.forEach((schedule) => {
-    const card = document.createElement("div");
-
-    card.className = "site-card";
-
-    const status = schedule.active ? "ACTIVE" : "INACTIVE";
-
-    const statusClass = schedule.active ? "active" : "";
-
-    card.innerHTML = `
-
-                <div class="site-top">
-
-                    <span
-                        class="site-domain"
-                    >
-                        ${schedule.domain}
-                    </span>
-
-                    <span
-                        class="status ${statusClass}"
-                    >
-                        ${status}
-                    </span>
-
-                </div>
+  scheduledBlocksContainer.innerHTML =
+    "";
 
 
-                <div class="remaining">
+  scheduleCount.textContent =
+    schedules.length;
 
-                    Days:
-                    ${formatScheduleDays(schedule.schedule.days)}
-
-                </div>
-
-
-                <div class="remaining">
-
-                    Time:
-                    ${schedule.schedule.startTime}
-                    →
-                    ${schedule.schedule.endTime}
-
-                </div>
-
-
-                <button
-                    class="remove-schedule-button"
-                    data-schedule-id="${schedule.id}"
-                >
-                    Remove Schedule
-                </button>
-
-            `;
-
-    scheduledBlocksContainer.appendChild(card);
-  });
 
   /*
-   * Attach remove buttons.
+   * No schedules.
    */
 
-  const removeButtons = document.querySelectorAll(".remove-schedule-button");
+  if (
+    schedules.length === 0
+  ) {
 
-  removeButtons.forEach((button) => {
-    button.addEventListener("click", () => {
-      const scheduleId = button.dataset.scheduleId;
+    scheduledBlocksContainer.innerHTML = `
 
-      removeScheduledBlock(scheduleId);
-    });
-  });
+      <div class="empty-state">
+        No scheduled blocks.
+      </div>
+
+    `;
+
+    return;
+
+  }
+
+
+  /*
+   * Create cards.
+   */
+
+  schedules.forEach(
+    (schedule) => {
+
+      const card =
+        document.createElement(
+          "div"
+        );
+
+
+      card.className =
+        "site-card";
+
+
+      const status =
+        schedule.active
+          ? "ACTIVE"
+          : "INACTIVE";
+
+
+      const statusClass =
+        schedule.active
+          ? "active"
+          : "";
+
+
+      card.innerHTML = `
+
+        <div class="site-top">
+
+          <span class="site-domain">
+            ${schedule.domain}
+          </span>
+
+          <span
+            class="status ${statusClass}"
+          >
+            ${status}
+          </span>
+
+        </div>
+
+
+        <div class="remaining">
+
+          Days:
+          ${formatScheduleDays(
+            schedule.schedule.days
+          )}
+
+        </div>
+
+
+        <div class="remaining">
+
+          Time:
+          ${schedule.schedule.startTime}
+          →
+          ${schedule.schedule.endTime}
+
+        </div>
+
+
+        <div class="schedule-actions">
+
+          <button
+            class="edit-schedule-button"
+            data-schedule-id="${schedule.id}"
+          >
+            Edit
+          </button>
+
+
+          <button
+            class="remove-schedule-button"
+            data-schedule-id="${schedule.id}"
+          >
+            Remove
+          </button>
+
+        </div>
+
+      `;
+
+
+      scheduledBlocksContainer
+        .appendChild(card);
+
+    }
+  );
+
+
+  /*
+   * ------------------------------------------------
+   * Attach Edit buttons
+   * ------------------------------------------------
+   */
+
+  const editButtons =
+    document.querySelectorAll(
+      ".edit-schedule-button"
+    );
+
+
+  editButtons.forEach(
+    (button) => {
+
+      button.addEventListener(
+        "click",
+        () => {
+
+          const scheduleId =
+            button.dataset
+              .scheduleId;
+
+
+          startEditingSchedule(
+            scheduleId
+          );
+
+        }
+      );
+
+    }
+  );
+
+
+  /*
+   * ------------------------------------------------
+   * Attach Remove buttons
+   * ------------------------------------------------
+   */
+
+  const removeButtons =
+    document.querySelectorAll(
+      ".remove-schedule-button"
+    );
+
+
+  removeButtons.forEach(
+    (button) => {
+
+      button.addEventListener(
+        "click",
+        () => {
+
+          const scheduleId =
+            button.dataset
+              .scheduleId;
+
+
+          removeScheduledBlock(
+            scheduleId
+          );
+
+        }
+      );
+
+    }
+  );
+
 }
 
-function removeScheduledBlock(scheduleId) {
-  chrome.runtime.sendMessage(
-    {
-      type: "REMOVE_SCHEDULE",
 
-      scheduleId: scheduleId,
+/*
+ * --------------------------------------------------
+ * Remove scheduled block
+ * --------------------------------------------------
+ */
+
+function removeScheduledBlock(
+  scheduleId
+) {
+
+  chrome.runtime.sendMessage(
+
+    {
+
+      type:
+        "REMOVE_SCHEDULE",
+
+      scheduleId:
+        scheduleId
+
     },
 
     (response) => {
-      if (chrome.runtime.lastError) {
-        console.error(chrome.runtime.lastError.message);
 
-        message.textContent = "Extension error.";
+      if (
+        chrome.runtime
+          .lastError
+      ) {
+
+        console.error(
+          chrome.runtime
+            .lastError
+            .message
+        );
+
+
+        message.textContent =
+          "Extension error.";
 
         return;
+
       }
+
 
       if (!response) {
-        message.textContent = "No response from service worker.";
+
+        message.textContent =
+          "No response from service worker.";
 
         return;
+
       }
 
-      message.textContent = response.message;
 
-      if (response.success) {
+      message.textContent =
+        response.message;
+
+
+      if (
+        response.success
+      ) {
+
+        /*
+         * If we removed the schedule
+         * currently being edited,
+         * reset the form.
+         */
+
+        if (
+          editingScheduleId ===
+          scheduleId
+        ) {
+
+          resetScheduleForm();
+
+        }
+
+
         loadScheduledBlocks();
+
       }
-    },
+
+    }
+
   );
+
 }
 
-blockType.addEventListener("change", () => {
-  if (blockType.value === "scheduled") {
-    temporaryFields.classList.add("hidden");
 
-    scheduleFields.classList.remove("hidden");
-  } else {
-    temporaryFields.classList.remove("hidden");
+/*
+ * ==================================================
+ * TEMPORARY BLOCKS
+ * ==================================================
+ */
 
-    scheduleFields.classList.add("hidden");
-  }
-});
+
 /*
  * --------------------------------------------------
  * Format remaining time
  * --------------------------------------------------
  */
 
-function formatRemainingTime(milliseconds) {
-  if (milliseconds <= 0) {
+function formatRemainingTime(
+  milliseconds
+) {
+
+  if (
+    milliseconds <= 0
+  ) {
+
     return "Expired";
+
   }
 
-  const totalSeconds = Math.ceil(milliseconds / 1000);
 
-  const hours = Math.floor(totalSeconds / 3600);
+  const totalSeconds =
+    Math.ceil(
+      milliseconds / 1000
+    );
 
-  const minutes = Math.floor((totalSeconds % 3600) / 60);
 
-  const seconds = totalSeconds % 60;
+  const hours =
+    Math.floor(
+      totalSeconds / 3600
+    );
+
+
+  const minutes =
+    Math.floor(
+      (
+        totalSeconds % 3600
+      ) / 60
+    );
+
+
+  const seconds =
+    totalSeconds % 60;
+
 
   return (
-    String(hours).padStart(2, "0") +
-    ":" +
-    String(minutes).padStart(2, "0") +
-    ":" +
-    String(seconds).padStart(2, "0")
+
+    String(hours)
+      .padStart(2, "0")
+
+    +
+
+    ":"
+
+    +
+
+    String(minutes)
+      .padStart(2, "0")
+
+    +
+
+    ":"
+
+    +
+
+    String(seconds)
+      .padStart(2, "0")
+
   );
+
 }
+
 
 /*
  * --------------------------------------------------
@@ -232,20 +842,46 @@ function formatRemainingTime(milliseconds) {
  */
 
 async function loadBlockedSites() {
+
   try {
-    const result = await chrome.storage.local.get(["blockedSites"]);
 
-    const blockedSites = result.blockedSites || [];
+    const result =
+      await chrome.storage.local.get(
+        ["blockedSites"]
+      );
 
-    const activeSites = blockedSites.filter(
-      (site) => site.expiresAt > Date.now(),
+
+    const blockedSites =
+      result.blockedSites || [];
+
+
+    /*
+     * Only show active temporary blocks.
+     */
+
+    const activeSites =
+      blockedSites.filter(
+        (site) =>
+          site.expiresAt >
+          Date.now()
+      );
+
+
+    renderBlockedSites(
+      activeSites
     );
 
-    renderBlockedSites(activeSites);
   } catch (error) {
-    console.error("Failed to load sites:", error);
+
+    console.error(
+      "Failed to load sites:",
+      error
+    );
+
   }
+
 }
+
 
 /*
  * --------------------------------------------------
@@ -253,334 +889,651 @@ async function loadBlockedSites() {
  * --------------------------------------------------
  */
 
-function renderBlockedSites(sites) {
-  blockedSitesContainer.innerHTML = "";
+function renderBlockedSites(
+  sites
+) {
 
-  siteCount.textContent = sites.length;
-
-  if (sites.length === 0) {
-    blockedSitesContainer.innerHTML = `
-
-            <div class="empty-state">
-                No active blocks.
-            </div>
-
-        `;
-
-    return;
-  }
-
-  sites.forEach((site) => {
-    const card = document.createElement("div");
-
-    card.className = "site-card";
-
-    card.innerHTML = `
-
-            <div class="site-top">
-
-                <span class="site-domain">
-                    ${site.domain}
-                </span>
-
-                <span class="status active">
-                    BLOCKED
-                </span>
-
-            </div>
+  blockedSitesContainer.innerHTML =
+    "";
 
 
-            <div
-                class="remaining"
-                data-expires-at="${site.expiresAt}"
-            >
-                Remaining:
-                ${formatRemainingTime(site.expiresAt - Date.now())}
-            </div>
+  siteCount.textContent =
+    sites.length;
 
-
-            <button
-                class="remove-button"
-                data-domain="${site.domain}"
-            >
-                Remove Block
-            </button>
-
-        `;
-
-    blockedSitesContainer.appendChild(card);
-  });
 
   /*
-   * Attach Remove buttons
+   * No active blocks.
    */
 
-  const removeButtons = document.querySelectorAll(".remove-button");
+  if (
+    sites.length === 0
+  ) {
 
-  removeButtons.forEach((button) => {
-    button.addEventListener("click", () => {
-      const domain = button.dataset.domain;
+    blockedSitesContainer.innerHTML = `
 
-      removeBlock(domain);
-    });
-  });
+      <div class="empty-state">
+        No active blocks.
+      </div>
+
+    `;
+
+    return;
+
+  }
+
+
+  /*
+   * Create cards.
+   */
+
+  sites.forEach(
+    (site) => {
+
+      const card =
+        document.createElement(
+          "div"
+        );
+
+
+      card.className =
+        "site-card";
+
+
+      card.innerHTML = `
+
+        <div class="site-top">
+
+          <span class="site-domain">
+            ${site.domain}
+          </span>
+
+          <span class="status active">
+            BLOCKED
+          </span>
+
+        </div>
+
+
+        <div
+          class="remaining"
+          data-expires-at="${site.expiresAt}"
+        >
+          Remaining:
+          ${
+            formatRemainingTime(
+              site.expiresAt -
+              Date.now()
+            )
+          }
+        </div>
+
+
+        <button
+          class="remove-button"
+          data-domain="${site.domain}"
+        >
+          Remove Block
+        </button>
+
+      `;
+
+
+      blockedSitesContainer
+        .appendChild(card);
+
+    }
+  );
+
+
+  /*
+   * ------------------------------------------------
+   * Attach Remove buttons
+   * ------------------------------------------------
+   */
+
+  const removeButtons =
+    document.querySelectorAll(
+      ".remove-button"
+    );
+
+
+  removeButtons.forEach(
+    (button) => {
+
+      button.addEventListener(
+        "click",
+        () => {
+
+          const domain =
+            button.dataset
+              .domain;
+
+
+          removeBlock(
+            domain
+          );
+
+        }
+      );
+
+    }
+  );
+
 }
+
 
 /*
  * --------------------------------------------------
- * Remove block
+ * Remove temporary block
  * --------------------------------------------------
  */
 
-function removeBlock(domain) {
-  chrome.runtime.sendMessage(
-    {
-      type: "REMOVE_BLOCK",
+function removeBlock(
+  domain
+) {
 
-      domain: domain,
+  chrome.runtime.sendMessage(
+
+    {
+
+      type:
+        "REMOVE_BLOCK",
+
+      domain:
+        domain
+
     },
 
     (response) => {
-      if (chrome.runtime.lastError) {
-        console.error(chrome.runtime.lastError.message);
 
-        message.textContent = "Extension error.";
+      if (
+        chrome.runtime
+          .lastError
+      ) {
+
+        console.error(
+          chrome.runtime
+            .lastError
+            .message
+        );
+
+
+        message.textContent =
+          "Extension error.";
 
         return;
+
       }
+
 
       if (!response) {
-        message.textContent = "No response from service worker.";
+
+        message.textContent =
+          "No response from service worker.";
 
         return;
+
       }
 
-      message.textContent = response.message;
 
-      if (response.success) {
+      message.textContent =
+        response.message;
+
+
+      if (
+        response.success
+      ) {
+
         loadBlockedSites();
+
       }
-    },
+
+    }
+
   );
+
 }
+
 
 /*
  * --------------------------------------------------
- * Update countdowns
+ * Update temporary countdowns
  * --------------------------------------------------
  */
 
 function updateCountdowns() {
-  const remainingElements = document.querySelectorAll("[data-expires-at]");
 
-  remainingElements.forEach((element) => {
-    const expiresAt = Number(element.dataset.expiresAt);
-
-    const remaining = expiresAt - Date.now();
-
-    if (remaining <= 0) {
-      element.textContent = "Expired";
-    } else {
-      element.textContent = `Remaining: ${formatRemainingTime(remaining)}`;
-    }
-  });
-}
-
-setInterval(updateCountdowns, 1000);
-
-/*
- * --------------------------------------------------
- * Create block
- * --------------------------------------------------
- */
-
-saveButton.addEventListener("click", () => {
-  /*
-   * ------------------------------------------
-   * Normalize website
-   * ------------------------------------------
-   */
-
-  let domain;
-
-  try {
-    domain = normalizeDomain(websiteInput.value);
-  } catch (error) {
-    message.textContent = error.message;
-
-    return;
-  }
-
-  /*
-   * ------------------------------------------
-   * Temporary block
-   * ------------------------------------------
-   */
-
-  if (blockType.value === "temporary") {
-    const duration = Number(durationInput.value);
-
-    if (!duration || duration <= 0) {
-      message.textContent = "Please enter a valid duration.";
-
-      return;
-    }
-
-    chrome.runtime.sendMessage(
-      {
-        type: "BLOCK_WEBSITE",
-
-        domain: domain,
-
-        duration: duration,
-      },
-
-      (response) => {
-        if (chrome.runtime.lastError) {
-          console.error(chrome.runtime.lastError.message);
-
-          message.textContent = "Extension error.";
-
-          return;
-        }
-
-        if (!response) {
-          message.textContent = "No response from service worker.";
-
-          return;
-        }
-
-        message.textContent = response.message;
-
-        if (response.success) {
-          websiteInput.value = "";
-
-          durationInput.value = "";
-
-          loadBlockedSites();
-        }
-      },
+  const remainingElements =
+    document.querySelectorAll(
+      "[data-expires-at]"
     );
 
-    return;
-  }
 
-  /*
-   * ------------------------------------------
-   * Scheduled block
-   * ------------------------------------------
-   */
+  remainingElements.forEach(
+    (element) => {
 
-  const dayCheckboxes = document.querySelectorAll(".day-checkbox:checked");
+      const expiresAt =
+        Number(
+          element.dataset
+            .expiresAt
+        );
 
-  const selectedDays = Array.from(dayCheckboxes).map((checkbox) =>
-    Number(checkbox.value),
-  );
 
-  const schedule = {
-    days: selectedDays,
+      const remaining =
+        expiresAt -
+        Date.now();
 
-    startTime: startTime.value,
 
-    endTime: endTime.value,
-  };
+      if (
+        remaining <= 0
+      ) {
 
-  /*
-   * ------------------------------------------
-   * Validate schedule
-   * ------------------------------------------
-   */
+        element.textContent =
+          "Expired";
 
-  const validation = validateSchedule(schedule);
+      } else {
 
-  if (!validation.valid) {
-    message.textContent = validation.message;
+        element.textContent =
+          `Remaining: ${formatRemainingTime(
+            remaining
+          )}`;
 
-    return;
-  }
-
-  /*
-   * ------------------------------------------
-   * Create schedule object
-   * ------------------------------------------
-   */
-
-  const scheduledBlock = {
-    type: "scheduled",
-
-    domain: domain,
-
-    schedule: schedule,
-  };
-
-  console.log("Scheduled block:", scheduledBlock);
-
-  /*
-   * ------------------------------------------
-   * Send schedule to service worker
-   * ------------------------------------------
-   *
-   * IMPORTANT:
-   *
-   * The service worker does NOT activate
-   * scheduled blocking yet.
-   *
-   * We are only testing the data flow.
-   * ------------------------------------------
-   */
-
-  chrome.runtime.sendMessage(
-    {
-      type: "CREATE_SCHEDULE",
-
-      scheduledBlock: scheduledBlock,
-    },
-
-    (response) => {
-      if (chrome.runtime.lastError) {
-        console.error(chrome.runtime.lastError.message);
-
-        message.textContent = "Extension error.";
-
-        return;
       }
 
-      if (!response) {
-        message.textContent = "No response from service worker.";
-
-        return;
-      }
-
-      message.textContent = response.message;
-    },
+    }
   );
-});
+
+}
+
+
+setInterval(
+  updateCountdowns,
+  1000
+);
+
+
 /*
- * --------------------------------------------------
- * Initial load
- * --------------------------------------------------
+ * ==================================================
+ * CREATE / UPDATE BLOCK
+ * ==================================================
+ */
+
+saveButton.addEventListener(
+  "click",
+  () => {
+
+    /*
+     * ----------------------------------------------
+     * Normalize website
+     * ----------------------------------------------
+     */
+
+    let domain;
+
+
+    try {
+
+      domain =
+        normalizeDomain(
+          websiteInput.value
+        );
+
+    } catch (error) {
+
+      message.textContent =
+        error.message;
+
+      return;
+
+    }
+
+
+    /*
+     * ----------------------------------------------
+     * Temporary block
+     * ----------------------------------------------
+     */
+
+    if (
+      blockType.value ===
+      "temporary"
+    ) {
+
+      const duration =
+        Number(
+          durationInput.value
+        );
+
+
+      if (
+        !duration ||
+        duration <= 0
+      ) {
+
+        message.textContent =
+          "Please enter a valid duration.";
+
+        return;
+
+      }
+
+
+      /*
+       * Temporary blocks should
+       * always create a new temporary block.
+       */
+
+      chrome.runtime.sendMessage(
+
+        {
+
+          type:
+            "BLOCK_WEBSITE",
+
+          domain:
+            domain,
+
+          duration:
+            duration
+
+        },
+
+        (response) => {
+
+          if (
+            chrome.runtime
+              .lastError
+          ) {
+
+            console.error(
+              chrome.runtime
+                .lastError
+                .message
+            );
+
+
+            message.textContent =
+              "Extension error.";
+
+            return;
+
+          }
+
+
+          if (!response) {
+
+            message.textContent =
+              "No response from service worker.";
+
+            return;
+
+          }
+
+
+          message.textContent =
+            response.message;
+
+
+          if (
+            response.success
+          ) {
+
+            resetScheduleForm();
+
+            loadBlockedSites();
+
+          }
+
+        }
+
+      );
+
+
+      return;
+
+    }
+
+
+    /*
+     * ----------------------------------------------
+     * Scheduled block
+     * ----------------------------------------------
+     */
+
+    const dayCheckboxes =
+      document.querySelectorAll(
+        ".day-checkbox:checked"
+      );
+
+
+    const selectedDays =
+      Array.from(
+        dayCheckboxes
+      ).map(
+        (checkbox) =>
+          Number(
+            checkbox.value
+          )
+      );
+
+
+    const schedule = {
+
+      days:
+        selectedDays,
+
+      startTime:
+        startTime.value,
+
+      endTime:
+        endTime.value
+
+    };
+
+
+    /*
+     * ----------------------------------------------
+     * Validate schedule
+     * ----------------------------------------------
+     */
+
+    const validation =
+      validateSchedule(
+        schedule
+      );
+
+
+    if (
+      !validation.valid
+    ) {
+
+      message.textContent =
+        validation.message;
+
+      return;
+
+    }
+
+
+    /*
+     * ----------------------------------------------
+     * Create schedule object
+     * ----------------------------------------------
+     */
+
+    const scheduledBlock = {
+
+      type:
+        "scheduled",
+
+      domain:
+        domain,
+
+      schedule:
+        schedule
+
+    };
+
+
+    console.log(
+      "Scheduled block:",
+      scheduledBlock
+    );
+
+
+    /*
+     * ----------------------------------------------
+     * Determine operation
+     * ----------------------------------------------
+     */
+
+    const messageData = {
+
+      type:
+        editingScheduleId
+          ? "UPDATE_SCHEDULE"
+          : "CREATE_SCHEDULE",
+
+      scheduledBlock:
+        scheduledBlock
+
+    };
+
+
+    /*
+     * Add schedule ID when editing.
+     */
+
+    if (
+      editingScheduleId
+    ) {
+
+      messageData.scheduleId =
+        editingScheduleId;
+
+    }
+
+
+    /*
+     * ----------------------------------------------
+     * Send to service worker
+     * ----------------------------------------------
+     */
+
+    chrome.runtime.sendMessage(
+
+      messageData,
+
+      (response) => {
+
+        if (
+          chrome.runtime
+            .lastError
+        ) {
+
+          console.error(
+            chrome.runtime
+              .lastError
+              .message
+          );
+
+
+          message.textContent =
+            "Extension error.";
+
+          return;
+
+        }
+
+
+        if (!response) {
+
+          message.textContent =
+            "No response from service worker.";
+
+          return;
+
+        }
+
+
+        message.textContent =
+          response.message;
+
+
+        if (
+          response.success
+        ) {
+
+          resetScheduleForm();
+
+          loadScheduledBlocks();
+
+        }
+
+      }
+
+    );
+
+  }
+);
+
+
+/*
+ * ==================================================
+ * INITIAL LOAD
+ * ==================================================
  */
 
 loadBlockedSites();
 
 loadScheduledBlocks();
 
+
 /*
- * --------------------------------------------------
- * Listen for storage changes
- * --------------------------------------------------
+ * ==================================================
+ * STORAGE SYNCHRONIZATION
+ * ==================================================
  */
 
-chrome.storage.onChanged.addListener((changes, areaName) => {
-  if (areaName !== "local") {
-    return;
-  }
+chrome.storage.onChanged.addListener(
+  (
+    changes,
+    areaName
+  ) => {
 
-  if (changes.blockedSites) {
-    loadBlockedSites();
-  }
+    if (
+      areaName !== "local"
+    ) {
 
-  if (changes.scheduledBlocks) {
-    loadScheduledBlocks();
+      return;
+
+    }
+
+
+    /*
+     * Temporary blocks changed.
+     */
+
+    if (
+      changes.blockedSites
+    ) {
+
+      loadBlockedSites();
+
+    }
+
+
+    /*
+     * Scheduled blocks changed.
+     */
+
+    if (
+      changes.scheduledBlocks
+    ) {
+
+      loadScheduledBlocks();
+
+    }
+
   }
-});
+);

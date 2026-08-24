@@ -221,6 +221,97 @@ function createRedirectRule(ruleId, domain, expiresAt) {
   };
 }
 
+async function handleUpdateSchedule(scheduleId, scheduledBlock) {
+  const scheduledBlocks = await getScheduledBlocks();
+
+  const index = scheduledBlocks.findIndex(
+    (schedule) => schedule.id === scheduleId,
+  );
+
+  if (index === -1) {
+    return {
+      success: false,
+
+      message: "Scheduled block not found.",
+    };
+  }
+
+  /*
+   * Normalize domain.
+   */
+
+  let domain;
+
+  try {
+    domain = normalizeDomain(scheduledBlock.domain);
+  } catch (error) {
+    return {
+      success: false,
+
+      message: error.message,
+    };
+  }
+
+  /*
+   * Validate schedule.
+   */
+
+  const validation = validateSchedule(scheduledBlock.schedule);
+
+  if (!validation.valid) {
+    return {
+      success: false,
+
+      message: validation.message,
+    };
+  }
+
+  const existing = scheduledBlocks[index];
+
+  /*
+   * Remove currently active rule.
+   */
+
+  if (existing.active) {
+    await chrome.declarativeNetRequest.updateDynamicRules({
+      removeRuleIds: [existing.ruleId],
+    });
+  }
+
+  /*
+   * Remove existing alarm.
+   */
+
+  await chrome.alarms.clear(`schedule:${existing.id}`);
+
+  /*
+   * Update schedule.
+   */
+
+  existing.domain = domain;
+
+  existing.schedule = scheduledBlock.schedule;
+
+  existing.active = false;
+
+  scheduledBlocks[index] = existing;
+
+  await saveScheduledBlocks(scheduledBlocks);
+
+  /*
+   * Re-evaluate immediately.
+   */
+
+  await synchronizeScheduledBlock(existing);
+
+  console.log("Scheduled block updated:", existing);
+
+  return {
+    success: true,
+
+    message: `${domain} schedule updated.`,
+  };
+}
 /*
  * ============================================================
  * SCHEDULED REDIRECT RULE
@@ -342,6 +433,29 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           success: false,
 
           message: "Failed to create schedule.",
+        });
+      });
+
+    return true;
+  }
+
+  if (message.type === "UPDATE_SCHEDULE") {
+    handleUpdateSchedule(
+      message.scheduleId,
+
+      message.scheduledBlock,
+    )
+      .then((response) => {
+        sendResponse(response);
+      })
+
+      .catch((error) => {
+        console.error("Update schedule error:", error);
+
+        sendResponse({
+          success: false,
+
+          message: "Failed to update schedule.",
         });
       });
 

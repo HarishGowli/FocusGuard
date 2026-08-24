@@ -322,3 +322,46 @@ select {
 
   opacity: 1;
 }
+
+.schedule-actions {
+  display: flex;
+
+  gap: 6px;
+
+  margin-top: 10px;
+}
+
+.edit-schedule-button,
+.remove-schedule-button {
+  width: auto;
+
+  padding: 6px 10px;
+
+  font-size: 11px;
+}
+
+.edit-schedule-button {
+  background: #eee;
+
+  color: #333;
+}
+
+.edit-schedule-button:hover {
+  background: #ddd;
+
+  opacity: 1;
+}
+
+.cancel-button {
+  margin-top: 6px;
+
+  background: #eee;
+
+  color: #333;
+}
+
+.cancel-button:hover {
+  background: #ddd;
+
+  opacity: 1;
+}

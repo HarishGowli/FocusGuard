@@ -545,6 +545,9 @@ body {
   transition: all 0.3s ease;
   animation: cardFadeIn 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
+.remove-button {
+  margin-top: 12px;  /* Increase from current value */
+}
 
 @keyframes cardFadeIn {
   from {
@@ -706,4 +709,16 @@ body {
     max-height: 500px;
     transform: translateY(0);
   }
+}
+
+/* Remove up/down arrows from number input */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type="number"] {
+  -moz-appearance: textfield;
+  appearance: textfield;
 }

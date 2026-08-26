@@ -855,13 +855,207 @@ saveButton.addEventListener("click", () => {
 
 /*
  * ==================================================
+ * ALLOWED WEBSITES (NEW)
+ * ==================================================
+ */
+
+/*
+ * --------------------------------------------------
+ * Load allowed websites
+ * --------------------------------------------------
+ */
+
+async function loadAllowedWebsites() {
+  try {
+    const result = await chrome.storage.local.get(["allowedWebsites"]);
+    const allowedWebsites = result.allowedWebsites || [];
+    renderAllowedWebsites(allowedWebsites);
+  } catch (error) {
+    console.error("Failed to load allowed websites:", error);
+  }
+}
+
+/*
+ * --------------------------------------------------
+ * Render allowed websites
+ * --------------------------------------------------
+ */
+
+function renderAllowedWebsites(websites) {
+  const container = document.getElementById("allowedWebsites");
+  const count = document.getElementById("allowedCount");
+
+  container.innerHTML = "";
+  count.textContent = websites.length;
+
+  if (websites.length === 0) {
+    container.innerHTML = `
+      <div class="empty-state">
+        No allowed websites. Add websites you never want to block.
+      </div>
+    `;
+    return;
+  }
+
+  websites.forEach((domain) => {
+    const card = document.createElement("div");
+    card.className = "site-card";
+    card.innerHTML = `
+      <div class="site-top">
+        <span class="site-domain">${domain}</span>
+        <span class="status active">ALLOWED</span>
+      </div>
+      <button
+        class="remove-button"
+        data-domain="${domain}"
+        style="background: #fee; color: #d32f2f;"
+      >
+        Remove from Allowed
+      </button>
+    `;
+    container.appendChild(card);
+  });
+
+  // Attach remove buttons
+  document
+    .querySelectorAll("#allowedWebsites .remove-button")
+    .forEach((button) => {
+      button.addEventListener("click", () => {
+        const domain = button.dataset.domain;
+        removeAllowedWebsite(domain);
+      });
+    });
+}
+
+/*
+ * --------------------------------------------------
+ * Add allowed website
+ * --------------------------------------------------
+ */
+
+function addAllowedWebsite(domain) {
+  chrome.runtime.sendMessage(
+    {
+      type: "ADD_ALLOWED_WEBSITE",
+      domain: domain,
+    },
+    (response) => {
+      if (chrome.runtime.lastError) {
+        console.error(chrome.runtime.lastError.message);
+        document.getElementById("message").textContent = "Extension error.";
+        return;
+      }
+
+      if (!response) {
+        document.getElementById("message").textContent =
+          "No response from service worker.";
+        return;
+      }
+
+      document.getElementById("message").textContent = response.message;
+      document.getElementById("message").className = response.success
+        ? "message success"
+        : "message error";
+
+      if (response.success) {
+        document.getElementById("allowedInput").value = "";
+        loadAllowedWebsites();
+        loadBlockedSites();
+        loadScheduledBlocks();
+      }
+    },
+  );
+}
+
+/*
+ * --------------------------------------------------
+ * Remove allowed website
+ * --------------------------------------------------
+ */
+
+function removeAllowedWebsite(domain) {
+  chrome.runtime.sendMessage(
+    {
+      type: "REMOVE_ALLOWED_WEBSITE",
+      domain: domain,
+    },
+    (response) => {
+      if (chrome.runtime.lastError) {
+        console.error(chrome.runtime.lastError.message);
+        document.getElementById("message").textContent = "Extension error.";
+        return;
+      }
+
+      if (!response) {
+        document.getElementById("message").textContent =
+          "No response from service worker.";
+        return;
+      }
+
+      document.getElementById("message").textContent = response.message;
+      document.getElementById("message").className = response.success
+        ? "message success"
+        : "message error";
+
+      if (response.success) {
+        loadAllowedWebsites();
+        loadBlockedSites();
+        loadScheduledBlocks();
+      }
+    },
+  );
+}
+
+/*
+ * --------------------------------------------------
+ * Add allowed website button listener
+ * --------------------------------------------------
+ */
+
+document.getElementById("addAllowedButton").addEventListener("click", () => {
+  const input = document.getElementById("allowedInput");
+  const domain = input.value.trim();
+
+  if (!domain) {
+    document.getElementById("message").textContent =
+      "Please enter a website domain.";
+    document.getElementById("message").className = "message error";
+    return;
+  }
+
+  let normalizedDomain;
+  try {
+    normalizedDomain = normalizeDomain(domain);
+  } catch (error) {
+    document.getElementById("message").textContent = error.message;
+    document.getElementById("message").className = "message error";
+    return;
+  }
+
+  addAllowedWebsite(normalizedDomain);
+});
+
+/*
+ * --------------------------------------------------
+ * Enter key support for allowed input
+ * --------------------------------------------------
+ */
+
+document.getElementById("allowedInput").addEventListener("keypress", (e) => {
+  if (e.key === "Enter") {
+    document.getElementById("addAllowedButton").click();
+  }
+});
+
+/*
+ * ==================================================
  * INITIAL LOAD
  * ==================================================
  */
 
 loadBlockedSites();
-
 loadScheduledBlocks();
+loadAllowedWebsites();
 
 /*
  * ==================================================
@@ -887,6 +1081,16 @@ chrome.storage.onChanged.addListener((changes, areaName) => {
    */
 
   if (changes.scheduledBlocks) {
+    loadScheduledBlocks();
+  }
+
+  /*
+   * Allowed websites changed. (NEW)
+   */
+
+  if (changes.allowedWebsites) {
+    loadAllowedWebsites();
+    loadBlockedSites();
     loadScheduledBlocks();
   }
 });

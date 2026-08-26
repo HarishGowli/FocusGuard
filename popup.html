@@ -5,15 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>FocusGuard</title>
     <link rel="stylesheet" href="popup.css" />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
-      rel="stylesheet"
-    />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   </head>
 
   <body>
     <div class="container">
-      <!-- Header with animated gradient -->
+      <!-- Header -->
       <header class="header">
         <div class="header-content">
           <div class="logo-wrapper">
@@ -24,7 +21,7 @@
         </div>
       </header>
 
-      <!-- Add website section with card animation -->
+      <!-- Add website section -->
       <section class="add-section card-animate">
         <!-- Block Type Dropdown -->
         <div class="form-group">
@@ -127,10 +124,7 @@
             <span class="btn-icon">✨</span>
             <span class="btn-text">Create Block</span>
           </button>
-          <button
-            id="cancelEditButton"
-            class="btn btn-secondary btn-animate hidden"
-          >
+          <button id="cancelEditButton" class="btn btn-secondary btn-animate hidden">
             <span class="btn-icon">↩️</span>
             <span class="btn-text">Cancel</span>
           </button>
@@ -164,6 +158,38 @@
         </div>
         <div id="scheduledBlocks" class="blocked-sites">
           <!-- Scheduled blocks appear here -->
+        </div>
+      </section>
+
+      <!-- Allowed Websites Section (NEW) -->
+      <section class="blocked-section card-animate">
+        <div class="section-header">
+          <div class="section-title">
+            <span class="section-icon">✅</span>
+            <h2>Allowed Websites</h2>
+          </div>
+          <span id="allowedCount" class="badge">0</span>
+        </div>
+        
+        <div class="form-group" style="margin-bottom: 10px;">
+          <div class="input-wrapper">
+            <span class="input-icon">🔗</span>
+            <input
+              type="text"
+              id="allowedInput"
+              placeholder="Add allowed website (e.g., github.com)"
+              class="form-input"
+              style="padding-left: 38px;"
+            />
+          </div>
+          <button id="addAllowedButton" class="btn btn-primary" style="margin-top: 8px; padding: 8px; font-size: 12px;">
+            <span class="btn-icon">➕</span>
+            <span class="btn-text">Add to Allowed List</span>
+          </button>
+        </div>
+
+        <div id="allowedWebsites" class="blocked-sites">
+          <!-- Allowed websites will be inserted dynamically -->
         </div>
       </section>
     </div>

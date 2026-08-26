@@ -13,6 +13,7 @@
  * 6. Alarm management
  * 7. Storage management
  * 8. Startup recovery
+ * 9. Allowed websites (whitelist)
  *
  * ============================================================
  */
@@ -139,6 +140,47 @@ async function saveScheduledBlocks(scheduledBlocks) {
   await chrome.storage.local.set({
     scheduledBlocks: scheduledBlocks,
   });
+}
+
+/*
+ * ============================================================
+ * ALLOWED WEBSITES STORAGE (NEW)
+ * ============================================================
+ */
+
+/*
+ * ------------------------------------------------------------
+ * Get allowed websites
+ * ------------------------------------------------------------
+ */
+
+async function getAllowedWebsites() {
+  const result = await chrome.storage.local.get(["allowedWebsites"]);
+
+  return result.allowedWebsites || [];
+}
+
+/*
+ * ------------------------------------------------------------
+ * Save allowed websites
+ * ------------------------------------------------------------
+ */
+
+async function saveAllowedWebsites(allowedWebsites) {
+  await chrome.storage.local.set({
+    allowedWebsites: allowedWebsites,
+  });
+}
+
+/*
+ * ------------------------------------------------------------
+ * Check if website is allowed (whitelisted)
+ * ------------------------------------------------------------
+ */
+
+async function isWebsiteAllowed(domain) {
+  const allowedWebsites = await getAllowedWebsites();
+  return allowedWebsites.includes(domain);
 }
 
 /*
@@ -480,6 +522,58 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
     return true;
   }
+
+  /*
+   * ----------------------------------------------------
+   * Allowed Websites (NEW)
+   * ----------------------------------------------------
+   */
+
+  if (message.type === "ADD_ALLOWED_WEBSITE") {
+    handleAddAllowedWebsite(message.domain)
+      .then((response) => {
+        sendResponse(response);
+      })
+      .catch((error) => {
+        console.error("Add allowed website error:", error);
+        sendResponse({
+          success: false,
+          message: "Failed to add allowed website.",
+        });
+      });
+    return true;
+  }
+
+  if (message.type === "REMOVE_ALLOWED_WEBSITE") {
+    handleRemoveAllowedWebsite(message.domain)
+      .then((response) => {
+        sendResponse(response);
+      })
+      .catch((error) => {
+        console.error("Remove allowed website error:", error);
+        sendResponse({
+          success: false,
+          message: "Failed to remove allowed website.",
+        });
+      });
+    return true;
+  }
+
+  if (message.type === "GET_ALLOWED_WEBSITES") {
+    handleGetAllowedWebsites()
+      .then((response) => {
+        sendResponse(response);
+      })
+      .catch((error) => {
+        console.error("Get allowed websites error:", error);
+        sendResponse({
+          success: false,
+          message: "Failed to get allowed websites.",
+          websites: []
+        });
+      });
+    return true;
+  }
 });
 
 /*
@@ -510,6 +604,20 @@ async function handleBlockWebsite(message) {
       success: false,
 
       message: error.message,
+    };
+  }
+
+  /*
+   * --------------------------------------------------------
+   * Check if website is allowed (whitelisted) (NEW)
+   * --------------------------------------------------------
+   */
+
+  const isAllowed = await isWebsiteAllowed(domain);
+  if (isAllowed) {
+    return {
+      success: false,
+      message: `${domain} is in your allowed list. Cannot block.`,
     };
   }
 
@@ -864,6 +972,15 @@ async function restoreAlarms() {
 
 async function activateScheduledBlock(scheduledBlock) {
   /*
+   * Check if website is allowed (whitelisted) (NEW)
+   */
+  const isAllowed = await isWebsiteAllowed(scheduledBlock.domain);
+  if (isAllowed) {
+    console.log("Skipping scheduled block - website is allowed:", scheduledBlock.domain);
+    return;
+  }
+
+  /*
    * Check whether the rule already exists.
    */
 
@@ -1122,6 +1239,20 @@ async function handleCreateSchedule(scheduledBlock) {
       success: false,
 
       message: error.message,
+    };
+  }
+
+  /*
+   * --------------------------------------------------------
+   * Check if website is allowed (whitelisted) (NEW)
+   * --------------------------------------------------------
+   */
+
+  const isAllowed = await isWebsiteAllowed(domain);
+  if (isAllowed) {
+    return {
+      success: false,
+      message: `${domain} is in your allowed list. Cannot create schedule.`,
     };
   }
 
@@ -1524,3 +1655,192 @@ chrome.runtime.onStartup.addListener(async () => {
     console.error("Browser startup recovery failed:", error);
   }
 });
+
+/*
+ * ============================================================
+ * ALLOWED WEBSITES HANDLERS (NEW)
+ * ============================================================
+ */
+
+/*
+ * ------------------------------------------------------------
+ * Handle ADD_ALLOWED_WEBSITE message
+ * ------------------------------------------------------------
+ */
+
+async function handleAddAllowedWebsite(domain) {
+  /*
+   * Normalize domain.
+   */
+
+  let normalizedDomain;
+
+  try {
+    normalizedDomain = normalizeDomain(domain);
+  } catch (error) {
+    return {
+      success: false,
+      message: error.message,
+    };
+  }
+
+  /*
+   * Get current allowed websites.
+   */
+
+  const allowedWebsites = await getAllowedWebsites();
+
+  /*
+   * Check if already allowed.
+   */
+
+  if (allowedWebsites.includes(normalizedDomain)) {
+    return {
+      success: false,
+      message: `${normalizedDomain} is already in your allowed list.`,
+    };
+  }
+
+  /*
+   * Check if domain is currently blocked temporarily.
+   * If yes, remove the block first.
+   */
+
+  const blockedSites = await getBlockedSites();
+  const blockedIndex = blockedSites.findIndex(
+    (site) => site.domain === normalizedDomain
+  );
+
+  if (blockedIndex !== -1) {
+    const site = blockedSites[blockedIndex];
+    
+    // Remove DNR rule
+    await chrome.declarativeNetRequest.updateDynamicRules({
+      removeRuleIds: [site.ruleId],
+    });
+    
+    // Remove alarm
+    await chrome.alarms.clear(`unblock:${normalizedDomain}`);
+    
+    // Remove from blocked sites
+    blockedSites.splice(blockedIndex, 1);
+    await saveBlockedSites(blockedSites);
+    
+    console.log("Removed temporary block for allowed website:", normalizedDomain);
+  }
+
+  /*
+   * Check if domain has an active scheduled block.
+   * If yes, deactivate it.
+   */
+
+  const scheduledBlocks = await getScheduledBlocks();
+  const scheduleIndex = scheduledBlocks.findIndex(
+    (item) => item.domain === normalizedDomain
+  );
+
+  if (scheduleIndex !== -1) {
+    const schedule = scheduledBlocks[scheduleIndex];
+    
+    if (schedule.active) {
+      await chrome.declarativeNetRequest.updateDynamicRules({
+        removeRuleIds: [schedule.ruleId],
+      });
+      schedule.active = false;
+    }
+    
+    // Remove schedule alarm
+    await chrome.alarms.clear(`schedule:${schedule.id}`);
+    
+    // Remove from scheduled blocks
+    scheduledBlocks.splice(scheduleIndex, 1);
+    await saveScheduledBlocks(scheduledBlocks);
+    
+    console.log("Removed scheduled block for allowed website:", normalizedDomain);
+  }
+
+  /*
+   * Add to allowed list.
+   */
+
+  allowedWebsites.push(normalizedDomain);
+  await saveAllowedWebsites(allowedWebsites);
+
+  console.log("Added allowed website:", normalizedDomain);
+
+  return {
+    success: true,
+    message: `${normalizedDomain} added to allowed list.`,
+  };
+}
+
+/*
+ * ------------------------------------------------------------
+ * Handle REMOVE_ALLOWED_WEBSITE message
+ * ------------------------------------------------------------
+ */
+
+async function handleRemoveAllowedWebsite(domain) {
+  /*
+   * Normalize domain.
+   */
+
+  let normalizedDomain;
+
+  try {
+    normalizedDomain = normalizeDomain(domain);
+  } catch (error) {
+    return {
+      success: false,
+      message: error.message,
+    };
+  }
+
+  /*
+   * Get current allowed websites.
+   */
+
+  const allowedWebsites = await getAllowedWebsites();
+
+  /*
+   * Check if exists.
+   */
+
+  const index = allowedWebsites.indexOf(normalizedDomain);
+
+  if (index === -1) {
+    return {
+      success: false,
+      message: `${normalizedDomain} is not in your allowed list.`,
+    };
+  }
+
+  /*
+   * Remove from allowed list.
+   */
+
+  allowedWebsites.splice(index, 1);
+  await saveAllowedWebsites(allowedWebsites);
+
+  console.log("Removed allowed website:", normalizedDomain);
+
+  return {
+    success: true,
+    message: `${normalizedDomain} removed from allowed list.`,
+  };
+}
+
+/*
+ * ------------------------------------------------------------
+ * Handle GET_ALLOWED_WEBSITES message
+ * ------------------------------------------------------------
+ */
+
+async function handleGetAllowedWebsites() {
+  const allowedWebsites = await getAllowedWebsites();
+
+  return {
+    success: true,
+    websites: allowedWebsites,
+  };
+}

@@ -722,3 +722,35 @@ input[type="number"] {
   -moz-appearance: textfield;
   appearance: textfield;
 }
+
+/* ============================================
+   ALLOWED WEBSITES SECTION (NEW)
+   ============================================ */
+
+#allowedInput {
+  padding-left: 38px;
+}
+
+#allowedWebsites .site-card .status.active {
+  color: #0a7e3c;
+  background: rgba(10, 126, 60, 0.1);
+}
+
+#allowedWebsites .site-card .remove-button {
+  width: auto;
+  margin-top: 8px;
+  padding: 4px 12px;
+  background: #fee;
+  color: #d32f2f;
+  font-size: 11px;
+  font-weight: 600;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+#allowedWebsites .site-card .remove-button:hover {
+  background: #fdd;
+  transform: scale(1.05);
+}

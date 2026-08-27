@@ -110,6 +110,7 @@ Set timer  Set schedule
          ↓
    User stays focused!
 ```
+---
 
 ## 🌐 Browser Support
 

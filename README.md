@@ -1,6 +1,6 @@
 # FocusGuard - Protect Your Focus, Achieve More
 
-[![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://github.com/yourusername/focusguard/releases)
+[![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://github.com/HarishGowli/focusguard/releases)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Chrome](https://img.shields.io/badge/Chrome-88+-brightgreen.svg)](https://www.google.com/chrome/)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](http://makeapullrequest.com)
@@ -78,7 +78,7 @@
 ### Method 2: From Source
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/focusguard.git
+git clone https://github.com/HarishGowli/focusguard.git
 
 # Navigate to the directory
 cd focusguard
@@ -243,9 +243,9 @@ in the Software without restriction...
 
 ## 📬 Contact
 
-- **Website**: [focusguard.vercel.app](https://focusguard.vercel.app)
-- **GitHub**: [github.com/yourusername/focusguard](https://github.com/yourusername/focusguard)
-- **Email**: your.email@example.com
+- **Website**: [focusguard-live.vercel.app](FocusGuard Website)
+- **GitHub**: [https://github.com/HarishGowli/FocusGuard](https://github.com/HarishGowli/FocusGuard)
+- **Email**: [gowliharish321@gmail.com](FocusGuard Developer)
 
 ---
 

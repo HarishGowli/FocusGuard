@@ -25,11 +25,11 @@
 ## 📸 Screenshots
 
 <div align="center">
+  <img src="screenshots/website.png" alt="Website" width="400"/>
   <img src="screenshots/popup.png" alt="Popup UI" width="400"/>
   <img src="screenshots/blocked-page.png" alt="Blocked Page" width="400"/>
   <br/>
   <img src="screenshots/schedule-block.png" alt="Schedule Block" width="400"/>
-  <img src="screenshots/website.png" alt="Website" width="400"/>
 </div>
 
 ---

@@ -111,6 +111,19 @@ Set timer  Set schedule
    User stays focused!
 ```
 
+## 🌐 Browser Support
+
+| Browser | Support | Status |
+|---------|---------|--------|
+| Chrome | ✅ Full | Active |
+| Edge | ✅ Full | Active |
+| Brave | ✅ Full | Active |
+| Opera | ✅ Full | Active |
+| Firefox | ⚠️ Planned | Future |
+| Safari | ❌ Not Planned | - |
+
+> **Note:** FocusGuard currently works on all Chromium-based browsers. Firefox support is planned for a future release.
+
 ---
 
 ## 🛠️ Tech Stack

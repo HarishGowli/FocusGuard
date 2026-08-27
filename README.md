@@ -243,9 +243,9 @@ in the Software without restriction...
 
 ## 📬 Contact
 
-- **Website**: [focusguard-live.vercel.app](FocusGuard Website)
-- **GitHub**: [https://github.com/HarishGowli/FocusGuard](https://github.com/HarishGowli/FocusGuard)
-- **Email**: [gowliharish321@gmail.com](FocusGuard Developer)
+- **Website**: [FocusGuard Website](focusguard-live.vercel.app)
+- **GitHub**: [GitHub Account](https://github.com/HarishGowli)
+- **Email**: [FocusGuard Developer](gowliharish321@gmail.com)
 
 ---
 
